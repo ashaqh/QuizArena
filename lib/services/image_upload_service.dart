@@ -34,33 +34,36 @@ class ImageUploadService {
       if (currentUser == null) {
         throw Exception('User must be authenticated to upload images');
       }
-      
+
       print('Uploading image for user: ${currentUser.uid}');
-      
+
       final String fileName = '${_uuid.v4()}.jpg';
       final String filePath = 'quiz_images/$fileName';
-      
+
       final Reference ref = _storage.ref().child(filePath);
-      
+
       // Upload the file
       final UploadTask uploadTask = ref.putFile(File(imageFile.path));
-      
+
       // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-      
+
       // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
-      
+
       print('Image uploaded successfully: $downloadUrl');
       return downloadUrl;
     } catch (e) {
       print('Upload error details: $e');
       print('Error type: ${e.runtimeType}');
-      
-      if (e.toString().contains('unauthorized') || e.toString().contains('permission')) {
-        throw Exception('Upload failed: Please check Firebase Storage security rules. User may not have upload permissions.');
+
+      if (e.toString().contains('unauthorized') ||
+          e.toString().contains('permission')) {
+        throw Exception(
+          'Upload failed: Please check Firebase Storage security rules. User may not have upload permissions.',
+        );
       }
-      
+
       throw Exception('Failed to upload image: $e');
     }
   }

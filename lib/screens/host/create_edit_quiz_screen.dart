@@ -271,7 +271,11 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
                     question.imageUrl!,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.broken_image, color: Colors.grey, size: 30);
+                      return const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                        size: 30,
+                      );
                     },
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
@@ -655,8 +659,8 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
                 answers: finalAnswers,
                 correctAnswerId: finalAnswers.firstWhere((a) => a.isCorrect).id,
                 timeLimit: timeLimit,
-                imageUrl: _imageUrlController.text.trim().isEmpty 
-                    ? null 
+                imageUrl: _imageUrlController.text.trim().isEmpty
+                    ? null
                     : _imageUrlController.text.trim(),
               );
               widget.onSave(newOrUpdatedQuestion);
@@ -678,14 +682,16 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        
+
         // Device upload button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _isUploadingImage ? null : _pickImageFromDevice,
             icon: const Icon(Icons.upload_file),
-            label: Text(_isUploadingImage ? 'Uploading...' : 'Upload Image from Device'),
+            label: Text(
+              _isUploadingImage ? 'Uploading...' : 'Upload Image from Device',
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -693,7 +699,7 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
             ),
           ),
         ),
-        
+
         if (_isUploadingImage) ...[
           const SizedBox(height: 12),
           const LinearProgressIndicator(),
@@ -715,7 +721,7 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
             },
           ),
         ],
-        
+
         const SizedBox(height: 8),
         const Text(
           'Upload an image from your camera or gallery. Images are stored securely in the cloud.',
@@ -741,7 +747,9 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
       }
 
       // Pick image
-      final XFile? imageFile = await ImageUploadService.pickImageFromDevice(source: source);
+      final XFile? imageFile = await ImageUploadService.pickImageFromDevice(
+        source: source,
+      );
       if (imageFile == null) {
         setState(() {
           _isUploadingImage = false;
@@ -750,8 +758,10 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
       }
 
       // Upload to Firebase Storage
-      final String downloadUrl = await ImageUploadService.uploadImageToFirebase(imageFile);
-      
+      final String downloadUrl = await ImageUploadService.uploadImageToFirebase(
+        imageFile,
+      );
+
       setState(() {
         _imageUrlController.text = downloadUrl;
         _isUploadingImage = false;
@@ -766,22 +776,23 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
       setState(() {
         _isUploadingImage = false;
       });
-      
+
       if (mounted) {
         String errorMessage = 'Failed to upload image: $e';
-        
+
         // Provide specific guidance for authorization errors
-        if (e.toString().contains('unauthorized') || 
+        if (e.toString().contains('unauthorized') ||
             e.toString().contains('permission') ||
             e.toString().contains('Firebase Storage: User is not authorized')) {
-          errorMessage = 'Upload failed: Firebase Storage rules need configuration.\n\n'
-                        'Please:\n'
-                        '1. Go to Firebase Console\n'
-                        '2. Navigate to Storage → Rules\n'
-                        '3. Configure upload permissions for authenticated users\n\n'
-                        'See FIREBASE_STORAGE_RULES.md for details.';
+          errorMessage =
+              'Upload failed: Firebase Storage rules need configuration.\n\n'
+              'Please:\n'
+              '1. Go to Firebase Console\n'
+              '2. Navigate to Storage → Rules\n'
+              '3. Configure upload permissions for authenticated users\n\n'
+              'See FIREBASE_STORAGE_RULES.md for details.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),

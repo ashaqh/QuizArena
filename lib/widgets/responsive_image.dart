@@ -49,9 +49,7 @@ class ResponsiveImage extends StatelessWidget {
                   height: effectiveMaxHeight,
                   width: effectiveMaxWidth,
                   color: Colors.grey[200],
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: const Center(child: CircularProgressIndicator()),
                 );
           },
           errorBuilder: (context, error, stackTrace) {
@@ -98,10 +96,11 @@ class GameQuestionImage extends StatelessWidget {
     final screenWidth = screenSize.width;
 
     // Different sizing for dialog vs full screen
-    final maxHeight = isInDialog 
-        ? screenHeight * 0.3  // Smaller in dialogs
+    final maxHeight = isInDialog
+        ? screenHeight *
+              0.3 // Smaller in dialogs
         : screenHeight * 0.4; // Larger in full game screen
-    
+
     final maxWidth = screenWidth * 0.9;
 
     return ResponsiveImage(
@@ -117,11 +116,7 @@ class ImagePreview extends StatelessWidget {
   final String imageUrl;
   final VoidCallback? onRemove;
 
-  const ImagePreview({
-    super.key,
-    required this.imageUrl,
-    this.onRemove,
-  });
+  const ImagePreview({super.key, required this.imageUrl, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -145,11 +140,7 @@ class ImagePreview extends StatelessWidget {
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
               ),
             ),
           ),
