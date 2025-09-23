@@ -158,9 +158,9 @@ class FirestoreService {
     });
   }
 
-  /// Generate a unique 6-character alphanumeric game code
+  /// Generate a unique 6-character alphabetic game code
   String _generateGameCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     final random = DateTime.now().millisecondsSinceEpoch;
     String code = '';
 

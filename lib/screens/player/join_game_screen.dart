@@ -95,7 +95,7 @@ class _JoinGameScreenState extends ConsumerState<JoinGameScreen> {
                         textDirection: TextDirection.ltr,
                         decoration: const InputDecoration(
                           labelText: 'Game Code',
-                          hintText: 'Enter 6-digit code',
+                          hintText: 'Enter 6-letter code',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.code),
                         ),
@@ -106,7 +106,10 @@ class _JoinGameScreenState extends ConsumerState<JoinGameScreen> {
                             return 'Please enter a game code';
                           }
                           if (value.length != 6) {
-                            return 'Game code must be 6 characters';
+                            return 'Game code must be 6 letters';
+                          }
+                          if (!RegExp(r'^[A-Z]+$').hasMatch(value)) {
+                            return 'Game code must contain only letters';
                           }
                           return null;
                         },

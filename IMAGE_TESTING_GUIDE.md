@@ -14,6 +14,14 @@ Your QuizArena app now supports streamlined image functionality:
 - **Aspect Ratio**: Original proportions maintained
 - **Loading States**: Smooth loading indicators and error handling
 
+## 🎮 Game Code Enhancement
+
+**NEW**: Game codes are now **6-letter alphabetic codes** (e.g., "FOREST", "PLANET")
+- ✅ **Easier to read**: No confusion between 0/O, 1/I, etc.
+- ✅ **Easier to type**: No number switching on mobile
+- ✅ **Voice-friendly**: Simple to spell out loud
+- ✅ **Still unique**: 308+ million possible combinations
+
 ## 🧪 Testing Instructions
 
 ### Test 1: Device Image Upload (Host Side)
