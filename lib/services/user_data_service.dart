@@ -19,7 +19,11 @@ class UserDataService {
   CollectionReference get leaderboards => _firestore.collection('leaderboards');
 
   /// Get or create user profile
-  Future<UserProfile> getOrCreateUserProfile(String userId, String name, String email) async {
+  Future<UserProfile> getOrCreateUserProfile(
+    String userId,
+    String name,
+    String email,
+  ) async {
     final docRef = userProfiles.doc(userId);
     final doc = await docRef.get();
 
@@ -84,50 +88,58 @@ class UserDataService {
         return GameHistoryRecord.fromJson({...data, 'id': doc.id});
       }).toList();
     } catch (e) {
-      debugPrint('Error getting game history (likely missing Firestore index): $e');
-      
+      debugPrint(
+        'Error getting game history (likely missing Firestore index): $e',
+      );
+
       // Fallback: Get all user documents and sort in memory
       // This is less efficient but works without an index
       final snapshot = await gameHistory
           .where('userId', isEqualTo: userId)
           .limit(limit * 2) // Get more to account for filtering
           .get();
-      
+
       List<GameHistoryRecord> records = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return GameHistoryRecord.fromJson({...data, 'id': doc.id});
       }).toList();
-      
+
       // Filter by role if specified
       if (role != null) {
         records = records.where((record) => record.role == role).toList();
       }
-      
+
       // Sort by date in memory
       records.sort((a, b) => b.playedAt.compareTo(a.playedAt));
-      
+
       // Limit results
       if (records.length > limit) {
         records = records.take(limit).toList();
       }
-      
+
       return records;
     }
   }
 
   /// Create game history record from completed game
-  Future<void> createGameHistoryFromGame(Game game, String userId, String role) async {
+  Future<void> createGameHistoryFromGame(
+    Game game,
+    String userId,
+    String role,
+  ) async {
     if (game.quiz?.title.isEmpty != false) return;
 
     final player = game.players.firstWhere(
       (p) => p.id == userId,
-      orElse: () => Player(id: userId, name: 'Unknown', totalScore: 0, scores: []),
+      orElse: () =>
+          Player(id: userId, name: 'Unknown', totalScore: 0, scores: []),
     );
 
     // Calculate player rank if playing
     int? playerRank;
     if (role == 'player') {
-      final sortedPlayers = [...game.players]..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+      final sortedPlayers = [...game.players]
+        ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
       playerRank = sortedPlayers.indexWhere((p) => p.id == userId) + 1;
     }
 
@@ -193,14 +205,16 @@ class UserDataService {
       );
     } else {
       // Calculate new average score
-      final totalScorePoints = (stats.averageScoreAsPlayer * stats.totalGamesPlayed) + (record.playerScore ?? 0);
+      final totalScorePoints =
+          (stats.averageScoreAsPlayer * stats.totalGamesPlayed) +
+          (record.playerScore ?? 0);
       final newTotalGames = stats.totalGamesPlayed + 1;
       final newAverage = totalScorePoints / newTotalGames;
 
       // Update win streak
       int newCurrentStreak = stats.currentWinStreak;
       int newLongestStreak = stats.longestWinStreak;
-      
+
       if (record.isWin) {
         newCurrentStreak += 1;
         if (newCurrentStreak > newLongestStreak) {
@@ -213,7 +227,10 @@ class UserDataService {
       updatedStats = stats.copyWith(
         totalGamesPlayed: newTotalGames,
         averageScoreAsPlayer: newAverage,
-        bestScoreAsPlayer: math.max(stats.bestScoreAsPlayer, record.playerScore ?? 0),
+        bestScoreAsPlayer: math.max(
+          stats.bestScoreAsPlayer,
+          record.playerScore ?? 0,
+        ),
         currentWinStreak: newCurrentStreak,
         longestWinStreak: newLongestStreak,
         lastActive: DateTime.now(),
@@ -221,7 +238,10 @@ class UserDataService {
     }
 
     // Check for new achievements
-    final newAchievements = await _checkForNewAchievements(updatedStats, record);
+    final newAchievements = await _checkForNewAchievements(
+      updatedStats,
+      record,
+    );
     if (newAchievements.isNotEmpty) {
       updatedStats = updatedStats.copyWith(
         achievements: [...stats.achievements, ...newAchievements],
@@ -241,36 +261,46 @@ class UserDataService {
     final existingAchievements = stats.achievements;
 
     // First game achievements
-    if (stats.totalGamesPlayed == 1 && !existingAchievements.contains('first_game')) {
+    if (stats.totalGamesPlayed == 1 &&
+        !existingAchievements.contains('first_game')) {
       newAchievements.add('first_game');
     }
-    if (stats.totalGamesHosted == 1 && !existingAchievements.contains('first_host')) {
+    if (stats.totalGamesHosted == 1 &&
+        !existingAchievements.contains('first_host')) {
       newAchievements.add('first_host');
     }
 
     // Win streak achievements
-    if (stats.currentWinStreak >= 3 && !existingAchievements.contains('win_streak_3')) {
+    if (stats.currentWinStreak >= 3 &&
+        !existingAchievements.contains('win_streak_3')) {
       newAchievements.add('win_streak_3');
     }
-    if (stats.currentWinStreak >= 5 && !existingAchievements.contains('win_streak_5')) {
+    if (stats.currentWinStreak >= 5 &&
+        !existingAchievements.contains('win_streak_5')) {
       newAchievements.add('win_streak_5');
     }
 
     // Score achievements
-    if (record.playerScore != null && record.playerScore! >= 1000 && !existingAchievements.contains('high_scorer')) {
+    if (record.playerScore != null &&
+        record.playerScore! >= 1000 &&
+        !existingAchievements.contains('high_scorer')) {
       newAchievements.add('high_scorer');
     }
 
     // Perfect game achievement
-    if (record.accuracyPercentage != null && record.accuracyPercentage! >= 100.0 && !existingAchievements.contains('perfect_game')) {
+    if (record.accuracyPercentage != null &&
+        record.accuracyPercentage! >= 100.0 &&
+        !existingAchievements.contains('perfect_game')) {
       newAchievements.add('perfect_game');
     }
 
     // Milestone achievements
-    if (stats.totalGamesPlayed >= 10 && !existingAchievements.contains('veteran_player')) {
+    if (stats.totalGamesPlayed >= 10 &&
+        !existingAchievements.contains('veteran_player')) {
       newAchievements.add('veteran_player');
     }
-    if (stats.totalGamesHosted >= 10 && !existingAchievements.contains('experienced_host')) {
+    if (stats.totalGamesHosted >= 10 &&
+        !existingAchievements.contains('experienced_host')) {
       newAchievements.add('experienced_host');
     }
 
@@ -313,7 +343,9 @@ class UserDataService {
     await userProfiles.doc(userId).delete();
 
     // Delete game history
-    final historyQuery = await gameHistory.where('userId', isEqualTo: userId).get();
+    final historyQuery = await gameHistory
+        .where('userId', isEqualTo: userId)
+        .get();
     final batch = _firestore.batch();
     for (final doc in historyQuery.docs) {
       batch.delete(doc.reference);
@@ -322,7 +354,8 @@ class UserDataService {
   }
 
   /// Update privacy settings
-  Future<void> updatePrivacySettings(String userId, {
+  Future<void> updatePrivacySettings(
+    String userId, {
     bool? sharePublicly,
     bool? saveHistory,
   }) async {

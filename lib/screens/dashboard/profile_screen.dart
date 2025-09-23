@@ -39,9 +39,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
       }
     } finally {
       if (mounted) {
@@ -56,7 +56,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       await _userDataService.updateUserProfile(updatedProfile);
       setState(() => _userProfile = updatedProfile);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
@@ -64,9 +64,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
       }
     } finally {
       if (mounted) {
@@ -100,9 +100,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         // Navigation will be handled by the auth state listener
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error signing out: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error signing out: $e')));
         }
       }
     }
@@ -126,10 +126,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _signOut),
         ],
       ),
       body: _isLoading
@@ -194,20 +191,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 16),
             Text(
               (profile?.name.isNotEmpty == true
-                      ? profile!.name
-                      : user?.displayName ?? 'Anonymous Player'),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+                  ? profile!.name
+                  : user?.displayName ?? 'Anonymous Player'),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
               user?.email ?? '',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -239,10 +230,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             const Text(
               'Statistics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -313,7 +301,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(12),
@@ -336,10 +329,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -360,35 +350,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             const Text(
               'Preferences',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Profile Visibility'),
               subtitle: const Text('Allow others to see your profile'),
               value: profile?.sharePublicly ?? true,
-              onChanged: _isUpdating ? null : (value) {
-                if (profile != null) {
-                  _updateProfile(profile.copyWith(
-                    sharePublicly: value,
-                  ));
-                }
-              },
+              onChanged: _isUpdating
+                  ? null
+                  : (value) {
+                      if (profile != null) {
+                        _updateProfile(profile.copyWith(sharePublicly: value));
+                      }
+                    },
             ),
             SwitchListTile(
               title: const Text('Save Game History'),
               subtitle: const Text('Keep record of your games'),
               value: profile?.saveHistory ?? true,
-              onChanged: _isUpdating ? null : (value) {
-                if (profile != null) {
-                  _updateProfile(profile.copyWith(
-                    saveHistory: value,
-                  ));
-                }
-              },
+              onChanged: _isUpdating
+                  ? null
+                  : (value) {
+                      if (profile != null) {
+                        _updateProfile(profile.copyWith(saveHistory: value));
+                      }
+                    },
             ),
           ],
         ),
@@ -407,10 +394,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             const Text(
               'Account',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -496,10 +480,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (user != null) {
         // Delete user data first
         await _userDataService.deleteUserData(user.uid);
-        
+
         // Then delete the authentication account
         await user.delete();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully')),
@@ -508,9 +492,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting account: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting account: $e')));
       }
     }
   }

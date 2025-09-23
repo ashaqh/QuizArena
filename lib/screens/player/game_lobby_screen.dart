@@ -281,9 +281,7 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
 
     // Navigate to main navigation
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const MainNavigationScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
       (Route<dynamic> route) => false,
     );
   }

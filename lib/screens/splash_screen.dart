@@ -103,7 +103,9 @@ class SplashScreen extends StatelessWidget {
                             const SizedBox(height: 32),
                             // Loading indicator
                             const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                               strokeWidth: 3,
                             ),
                           ],

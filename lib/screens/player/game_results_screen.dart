@@ -34,19 +34,19 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       final currentPlayer = ref.read(currentPlayerProvider);
-      
+
       if (user != null && currentPlayer != null) {
         // Determine if this user is the host or a player
         final isHost = currentPlayer.id == widget.game.hostId;
         final role = isHost ? 'host' : 'player';
-        
+
         // Save game history
         await _userDataService.createGameHistoryFromGame(
           widget.game,
           user.uid,
           role,
         );
-        
+
         setState(() => _isGameDataSaved = true);
         debugPrint('Game data saved successfully for $role');
       }
@@ -124,11 +124,12 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
           onPressed: () {
             ref.read(currentGameProvider.notifier).endGame();
             ref.read(currentPlayerProvider.notifier).state = null;
-            
+
             // Navigate to main navigation and show stats tab to highlight the new game data
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (context) => const MainNavigationScreen(initialIndex: 2), // Stats tab
+                builder: (context) =>
+                    const MainNavigationScreen(initialIndex: 2), // Stats tab
               ),
               (Route<dynamic> route) => false,
             );

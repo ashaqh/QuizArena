@@ -48,9 +48,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading dashboard: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading dashboard: $e')));
       }
     } finally {
       if (mounted) {
@@ -197,10 +197,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 SizedBox(width: 8),
                 Text(
                   'Quick Stats',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -252,7 +249,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -274,10 +276,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -379,10 +378,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 Text(
                   '${game.role == 'host' ? 'Hosted' : 'Played'} • ${_formatDate(game.playedAt)}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
@@ -428,10 +424,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 SizedBox(width: 8),
                 Text(
                   'Achievements',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -453,7 +446,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 runSpacing: 8,
                 children: achievements.take(6).map((achievement) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
@@ -491,7 +487,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // Navigate to Host tab
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (context) => const MainNavigationScreen(initialIndex: 0),
+                  builder: (context) =>
+                      const MainNavigationScreen(initialIndex: 0),
                 ),
                 (route) => false,
               );
@@ -512,7 +509,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // Navigate to Join tab
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (context) => const MainNavigationScreen(initialIndex: 1),
+                  builder: (context) =>
+                      const MainNavigationScreen(initialIndex: 1),
                 ),
                 (route) => false,
               );

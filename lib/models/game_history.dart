@@ -47,9 +47,7 @@ class GameHistoryRecord {
       totalPlayers: json['totalPlayers'] as int,
       totalQuestions: json['totalQuestions'] as int,
       accuracyPercentage: (json['accuracyPercentage'] as num?)?.toDouble(),
-      gameDuration: Duration(
-        milliseconds: json['gameDurationMs'] as int,
-      ),
+      gameDuration: Duration(milliseconds: json['gameDurationMs'] as int),
       metadata: json['metadata'] as Map<String, dynamic>? ?? {},
     );
   }
@@ -119,7 +117,7 @@ class GameHistoryRecord {
   String get performanceLevel {
     if (role == 'host') return 'Host';
     if (playerRank == null) return 'Unknown';
-    
+
     final percentage = playerRank! / totalPlayers;
     if (percentage <= 0.1) return 'Excellent';
     if (percentage <= 0.25) return 'Great';
@@ -187,14 +185,7 @@ class Achievement {
 }
 
 /// Categories for achievements
-enum AchievementCategory {
-  general,
-  hosting,
-  playing,
-  social,
-  creative,
-  streak,
-}
+enum AchievementCategory { general, hosting, playing, social, creative, streak }
 
 /// Leaderboard entry model
 class LeaderboardEntry {

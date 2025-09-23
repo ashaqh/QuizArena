@@ -256,7 +256,7 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
     try {
       final currentGame = ref.read(currentGameProvider);
       final user = FirebaseAuth.instance.currentUser;
-      
+
       // Save game data for host if game exists and user is authenticated
       if (currentGame != null && user != null) {
         await _userDataService.createGameHistoryFromGame(
@@ -266,28 +266,27 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
         );
         debugPrint('Host game data saved successfully');
       }
-      
+
       await ref.read(currentGameProvider.notifier).endGame();
-      
+
       if (mounted) {
         // Navigate to main navigation showing stats tab to highlight the new game
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => const MainNavigationScreen(initialIndex: 2), // Stats tab
+            builder: (context) =>
+                const MainNavigationScreen(initialIndex: 2), // Stats tab
           ),
           (Route<dynamic> route) => false,
         );
       }
     } catch (e) {
       debugPrint('Error ending game: $e');
-      
+
       // Fallback - just end the game and navigate normally
       await ref.read(currentGameProvider.notifier).endGame();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const MainNavigationScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
           (Route<dynamic> route) => false,
         );
       }

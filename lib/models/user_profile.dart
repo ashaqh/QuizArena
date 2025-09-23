@@ -115,7 +115,8 @@ class UserStatistics {
       totalGamesPlayed: json['totalGamesPlayed'] as int? ?? 0,
       totalPlayersHosted: json['totalPlayersHosted'] as int? ?? 0,
       totalQuizzesCreated: json['totalQuizzesCreated'] as int? ?? 0,
-      averageScoreAsPlayer: (json['averageScoreAsPlayer'] as num?)?.toDouble() ?? 0.0,
+      averageScoreAsPlayer:
+          (json['averageScoreAsPlayer'] as num?)?.toDouble() ?? 0.0,
       bestScoreAsPlayer: json['bestScoreAsPlayer'] as int? ?? 0,
       currentWinStreak: json['currentWinStreak'] as int? ?? 0,
       longestWinStreak: json['longestWinStreak'] as int? ?? 0,

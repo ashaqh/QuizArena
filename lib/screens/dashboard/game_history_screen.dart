@@ -15,13 +15,13 @@ class GameHistoryScreen extends ConsumerStatefulWidget {
 class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
   final UserDataService _userDataService = UserDataService();
   final ScrollController _scrollController = ScrollController();
-  
+
   List<GameHistoryRecord> _games = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMoreData = true;
   String? _selectedRole; // 'host', 'player', or null for all
-  
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +36,8 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       _loadMoreGames();
     }
   }
@@ -52,7 +53,7 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
           limit: 20,
           role: _selectedRole,
         );
-        
+
         setState(() {
           _games = games;
           _hasMoreData = games.length == 20;
@@ -60,9 +61,9 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading history: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading history: $e')));
       }
     } finally {
       if (mounted) {
@@ -84,9 +85,9 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading more games: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading more games: $e')));
       }
     } finally {
       if (mounted) {
@@ -124,18 +125,9 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
             icon: const Icon(Icons.filter_list),
             onSelected: _filterByRole,
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: null,
-                child: Text('All Games'),
-              ),
-              const PopupMenuItem(
-                value: 'host',
-                child: Text('Hosted Games'),
-              ),
-              const PopupMenuItem(
-                value: 'player',
-                child: Text('Played Games'),
-              ),
+              const PopupMenuItem(value: null, child: Text('All Games')),
+              const PopupMenuItem(value: 'host', child: Text('Hosted Games')),
+              const PopupMenuItem(value: 'player', child: Text('Played Games')),
             ],
           ),
         ],
@@ -207,29 +199,20 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.history,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.history, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             _selectedRole == null
                 ? 'No games played yet'
                 : _selectedRole == 'host'
-                    ? 'No games hosted yet'
-                    : 'No games played yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
+                ? 'No games hosted yet'
+                : 'No games played yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Start by creating a quiz or joining a game!',
-            style: TextStyle(
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(color: Colors.grey[500]),
           ),
         ],
       ),
@@ -250,7 +233,9 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: game.role == 'host' ? Colors.orange : Colors.green,
+                  backgroundColor: game.role == 'host'
+                      ? Colors.orange
+                      : Colors.green,
                   child: Icon(
                     game.role == 'host' ? Icons.home : Icons.games,
                     color: Colors.white,
@@ -273,17 +258,17 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
                       ),
                       Text(
                         '${game.role == 'host' ? 'Hosted' : 'Played'} • ${_formatDate(game.playedAt)}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
                 ),
                 if (game.role == 'player' && game.playerRank != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: _getRankColor(game.playerRank!).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
@@ -342,7 +327,8 @@ class _GameHistoryScreenState extends ConsumerState<GameHistoryScreen> {
                         Colors.orange,
                       ),
                     ),
-                  if (game.playerScore != null && game.accuracyPercentage != null)
+                  if (game.playerScore != null &&
+                      game.accuracyPercentage != null)
                     const SizedBox(width: 8),
                   if (game.accuracyPercentage != null)
                     Expanded(
