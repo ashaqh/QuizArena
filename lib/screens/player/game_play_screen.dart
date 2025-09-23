@@ -158,24 +158,83 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 24,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.shade300),
-                            ),
-                            child: const Text(
-                              'Submitted',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 24,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.green.shade300,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Submitted',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 16),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _selectedAnswerId ==
+                                          currentQuestion.correctAnswerId
+                                      ? Colors.green.shade100
+                                      : Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color:
+                                        _selectedAnswerId ==
+                                            currentQuestion.correctAnswerId
+                                        ? Colors.green.shade300
+                                        : Colors.red.shade300,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _selectedAnswerId ==
+                                              currentQuestion.correctAnswerId
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
+                                      color:
+                                          _selectedAnswerId ==
+                                              currentQuestion.correctAnswerId
+                                          ? Colors.green
+                                          : Colors.red,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _selectedAnswerId ==
+                                              currentQuestion.correctAnswerId
+                                          ? 'Correct'
+                                          : 'Incorrect',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            _selectedAnswerId ==
+                                                currentQuestion.correctAnswerId
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           if (currentQuestionIndex < questions.length - 1) ...[
                             const SizedBox(height: 8),
