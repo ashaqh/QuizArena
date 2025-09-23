@@ -1,6 +1,24 @@
-# quizarena
+# QuizArena
 
-A new Flutter project.
+A Kahoot-like quiz application built with Flutter and Firebase.
+
+## ✨ Features
+
+- **Real-time Multiplayer Quizzes**: Host and join live quiz sessions
+- **Firebase Authentication**: Secure user login and registration
+- **Cloud Storage**: Quiz data synced across all devices
+- **Image Support**: Upload images directly from your device for quiz questions
+- **Responsive Design**: Works on mobile devices, tablets, and web
+- **Live Scoring**: Real-time leaderboards and scoring
+
+## 📱 Image Upload Feature
+
+QuizArena now supports adding images to quiz questions:
+
+- **Device Upload**: Choose images from your camera or gallery
+- **Cloud Storage**: Images are securely stored in Firebase Storage
+- **Cross-Device Sync**: Images appear on all participants' devices
+- **Responsive Display**: Images automatically resize to fit screens
 
 ## Getting Started
 

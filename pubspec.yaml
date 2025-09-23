@@ -39,6 +39,7 @@ dependencies:
   firebase_core: ^3.0.0
   cloud_firestore: ^5.0.0
   firebase_auth: ^5.0.0
+  firebase_storage: ^12.0.0
   google_sign_in: ^6.0.0
 
   # SQLite for local storage
@@ -60,6 +61,9 @@ dependencies:
 
   # Environment variables
   flutter_dotenv: ^5.1.0
+
+  # Image picker for device uploads
+  image_picker: ^1.0.0
 
 dev_dependencies:
   flutter_test:

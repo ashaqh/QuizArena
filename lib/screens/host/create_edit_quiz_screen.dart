@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/providers.dart';
 import '../../models/quiz.dart';
 import '../../models/question.dart';
 import '../../models/answer.dart';
 import '../../services/ai_service.dart';
+import '../../services/image_upload_service.dart';
+import '../../widgets/responsive_image.dart';
 import 'ai_generation_dialog.dart';
 
 // LTRTextInputFormatter remains for potential future use or other fields
@@ -66,6 +69,7 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
             ),
             correctAnswerId: q.correctAnswerId,
             timeLimit: q.timeLimit,
+            imageUrl: q.imageUrl,
           );
         }).toList() ??
         [];
@@ -251,8 +255,38 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
       child: ListTile(
         title: Text(question.text),
         subtitle: Text(
-          '${question.answers.length} answers • ${question.timeLimit}s',
+          '${question.answers.length} answers • ${question.timeLimit}s${question.imageUrl != null ? " • Has image" : ""}',
         ),
+        leading: question.imageUrl != null
+            ? Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    question.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.broken_image, color: Colors.grey, size: 30);
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -425,8 +459,10 @@ class _QuestionDialogContent extends StatefulWidget {
 class _QuestionDialogContentState extends State<_QuestionDialogContent> {
   late TextEditingController _questionTextController;
   late TextEditingController _timeLimitController;
+  late TextEditingController _imageUrlController;
   late List<Answer> _dialogAnswers;
   late Map<String, TextEditingController> _answerControllers;
+  bool _isUploadingImage = false;
   bool get _isEditingQuestion => widget.question != null;
 
   @override
@@ -437,6 +473,9 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
     );
     _timeLimitController = TextEditingController(
       text: widget.question?.timeLimit.toString() ?? '30',
+    );
+    _imageUrlController = TextEditingController(
+      text: widget.question?.imageUrl ?? '',
     );
     _dialogAnswers = List<Answer>.from(
       widget.question?.answers.map(
@@ -457,6 +496,7 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
   void dispose() {
     _questionTextController.dispose();
     _timeLimitController.dispose();
+    _imageUrlController.dispose();
     _answerControllers.forEach((_, controller) {
       controller.dispose();
     });
@@ -496,6 +536,8 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
                   ),
                   keyboardType: TextInputType.number,
                 ),
+                const SizedBox(height: 16),
+                _buildImageSection(),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -613,6 +655,9 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
                 answers: finalAnswers,
                 correctAnswerId: finalAnswers.firstWhere((a) => a.isCorrect).id,
                 timeLimit: timeLimit,
+                imageUrl: _imageUrlController.text.trim().isEmpty 
+                    ? null 
+                    : _imageUrlController.text.trim(),
               );
               widget.onSave(newOrUpdatedQuestion);
               Navigator.pop(context);
@@ -621,6 +666,163 @@ class _QuestionDialogContentState extends State<_QuestionDialogContent> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Question Image (Optional)',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        
+        // Device upload button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _isUploadingImage ? null : _pickImageFromDevice,
+            icon: const Icon(Icons.upload_file),
+            label: Text(_isUploadingImage ? 'Uploading...' : 'Upload Image from Device'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        
+        if (_isUploadingImage) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 8),
+          const Text(
+            'Uploading image to cloud storage...',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+
+        if (_imageUrlController.text.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ImagePreview(
+            imageUrl: _imageUrlController.text,
+            onRemove: () {
+              setState(() {
+                _imageUrlController.clear();
+              });
+            },
+          ),
+        ],
+        
+        const SizedBox(height: 8),
+        const Text(
+          'Upload an image from your camera or gallery. Images are stored securely in the cloud.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickImageFromDevice() async {
+    try {
+      setState(() {
+        _isUploadingImage = true;
+      });
+
+      // Show source selection dialog
+      final ImageSource? source = await _showImageSourceSelectionDialog();
+      if (source == null) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Pick image
+      final XFile? imageFile = await ImageUploadService.pickImageFromDevice(source: source);
+      if (imageFile == null) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Upload to Firebase Storage
+      final String downloadUrl = await ImageUploadService.uploadImageToFirebase(imageFile);
+      
+      setState(() {
+        _imageUrlController.text = downloadUrl;
+        _isUploadingImage = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image uploaded successfully!')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUploadingImage = false;
+      });
+      
+      if (mounted) {
+        String errorMessage = 'Failed to upload image: $e';
+        
+        // Provide specific guidance for authorization errors
+        if (e.toString().contains('unauthorized') || 
+            e.toString().contains('permission') ||
+            e.toString().contains('Firebase Storage: User is not authorized')) {
+          errorMessage = 'Upload failed: Firebase Storage rules need configuration.\n\n'
+                        'Please:\n'
+                        '1. Go to Firebase Console\n'
+                        '2. Navigate to Storage → Rules\n'
+                        '3. Configure upload permissions for authenticated users\n\n'
+                        'See FIREBASE_STORAGE_RULES.md for details.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Copy Rules',
+              onPressed: () {
+                // You can implement copying rules to clipboard here if needed
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceSelectionDialog() async {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Image Source'),
+          content: const Text('Choose where to pick the image from:'),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Camera'),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Gallery'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/providers.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
+import '../../widgets/responsive_image.dart';
 import 'game_results_screen.dart';
 
 /// Game play screen where players answer questions in real-time
@@ -119,6 +120,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (currentQuestion.imageUrl != null) ...[
+                      GameQuestionImage(
+                        imageUrl: currentQuestion.imageUrl!,
+                        isInDialog: false,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                     Text(
                       currentQuestion.text,
                       style: const TextStyle(

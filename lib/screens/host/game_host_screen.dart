@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/providers.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
+import '../../widgets/responsive_image.dart';
 
 class GameHostScreen extends ConsumerStatefulWidget {
   const GameHostScreen({super.key});
@@ -72,6 +73,13 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            if (question.imageUrl != null) ...[
+              GameQuestionImage(
+                imageUrl: question.imageUrl!,
+                isInDialog: false,
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               question.text,
               style: Theme.of(context).textTheme.headlineSmall,
