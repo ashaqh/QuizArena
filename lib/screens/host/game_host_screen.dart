@@ -88,7 +88,10 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
                     backgroundColor: Colors.grey.shade300,
                     foregroundColor: Colors.black,
                   ),
-                  child: Text(a.text, style: const TextStyle(color: Colors.black)),
+                  child: Text(
+                    a.text,
+                    style: const TextStyle(color: Colors.black),
+                  ),
                 ),
               ),
             ),
