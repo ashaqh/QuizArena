@@ -16,7 +16,7 @@ class GamePlayScreen extends ConsumerStatefulWidget {
 
 class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   String? _selectedAnswerId;
-  bool _hasAnswered = false;
+  bool _isSubmitted = false;
   int _lastQuestionIndex = -1;
   Timer? _questionTimer;
   int _timeLeft = 30;
@@ -47,7 +47,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _questionTimer = null;
       _timeLeft = 30;
       _selectedAnswerId = null;
-      _hasAnswered = false;
+      _isSubmitted = false;
     }
 
     if (currentQuestionIndex >= questions.length) {
@@ -66,7 +66,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     }
 
     // Start timer for all players
-    if (_questionTimer == null && !_hasAnswered) {
+    if (_questionTimer == null && !_isSubmitted) {
       _startQuestionTimer();
     }
 
@@ -154,10 +154,75 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                               : 'Show Results',
                         ),
                       ),
-                    ] else if (_hasAnswered)
-                      const Text(
-                        'Waiting for next question...',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ] else if (_isSubmitted)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 24,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade300),
+                            ),
+                            child: const Text(
+                              'Submitted',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                          if (currentQuestionIndex < questions.length - 1) ...[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Waiting for next question...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    else if (_selectedAnswerId != null)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: _submitAnswer,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 24,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Submit Answer',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Time left: $_timeLeft seconds',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
                       )
                     else
                       Column(
@@ -206,7 +271,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       child: ElevatedButton(
-        onPressed: (isHost || _hasAnswered)
+        onPressed: (isHost || _isSubmitted)
             ? null
             : () => _selectAnswer(answer.id),
         style: ElevatedButton.styleFrom(
@@ -231,7 +296,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   void _selectAnswer(String answerId) {
     setState(() {
       _selectedAnswerId = answerId;
-      _hasAnswered = true;
+    });
+  }
+
+  void _submitAnswer() {
+    if (_selectedAnswerId == null) return;
+
+    setState(() {
+      _isSubmitted = true;
     });
 
     // Submit answer to the game
@@ -243,7 +315,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       );
       updatedAnswers[currentPlayer.id] ??= {};
       updatedAnswers[currentPlayer.id]![currentGame.currentQuestionIndex] =
-          answerId;
+          _selectedAnswerId!;
 
       final updatedGame = currentGame.copyWith(playerAnswers: updatedAnswers);
       ref.read(currentGameProvider.notifier).updateGame(updatedGame);
