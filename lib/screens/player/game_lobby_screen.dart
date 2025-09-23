@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/providers.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
+import '../../widgets/main_navigation.dart';
 import 'game_play_screen.dart';
 
 /// Game lobby screen where players wait for the game to start
@@ -278,7 +279,12 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     ref.read(currentGameProvider.notifier).endGame();
     ref.read(currentPlayerProvider.notifier).state = null;
 
-    // Navigate back to home
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Navigate to main navigation
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const MainNavigationScreen(),
+      ),
+      (Route<dynamic> route) => false,
+    );
   }
 }

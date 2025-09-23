@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
-import '../home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -208,13 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
         // TODO: Save display name to user profile
       }
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
+      // Navigation will be handled automatically by AuthWrapper
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -232,13 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final authService = AuthService();
       await authService.signInAnonymously();
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
+      // Navigation will be handled automatically by AuthWrapper
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -256,13 +243,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authService = AuthService();
       final result = await authService.signInWithGoogle();
       debugPrint('Google Sign-In Success: ${result?.user?.email}');
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
+      // Navigation will be handled automatically by AuthWrapper
     } catch (e) {
       debugPrint('Google Sign-In Error: $e');
       debugPrint('Error type: ${e.runtimeType}');

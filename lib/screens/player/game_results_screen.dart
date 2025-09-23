@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/providers.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
 import '../../models/question.dart';
+import '../../services/user_data_service.dart';
+import '../../widgets/main_navigation.dart';
 
 /// Game results screen showing final scores and correct answers
 class GameResultsScreen extends ConsumerStatefulWidget {
@@ -16,6 +19,43 @@ class GameResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
+  final UserDataService _userDataService = UserDataService();
+  bool _isGameDataSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _saveGameData();
+  }
+
+  Future<void> _saveGameData() async {
+    if (_isGameDataSaved) return;
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final currentPlayer = ref.read(currentPlayerProvider);
+      
+      if (user != null && currentPlayer != null) {
+        // Determine if this user is the host or a player
+        final isHost = currentPlayer.id == widget.game.hostId;
+        final role = isHost ? 'host' : 'player';
+        
+        // Save game history
+        await _userDataService.createGameHistoryFromGame(
+          widget.game,
+          user.uid,
+          role,
+        );
+        
+        setState(() => _isGameDataSaved = true);
+        debugPrint('Game data saved successfully for $role');
+      }
+    } catch (e) {
+      debugPrint('Error saving game data: $e');
+      // Don't show error to user, this is background operation
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentPlayer = ref.watch(currentPlayerProvider);
@@ -84,7 +124,14 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
           onPressed: () {
             ref.read(currentGameProvider.notifier).endGame();
             ref.read(currentPlayerProvider.notifier).state = null;
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            
+            // Navigate to main navigation and show stats tab to highlight the new game data
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const MainNavigationScreen(initialIndex: 2), // Stats tab
+              ),
+              (Route<dynamic> route) => false,
+            );
           },
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),

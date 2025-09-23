@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/providers.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
 import '../../widgets/responsive_image.dart';
+import '../../services/user_data_service.dart';
+import '../../widgets/main_navigation.dart';
 
 class GameHostScreen extends ConsumerStatefulWidget {
   const GameHostScreen({super.key});
@@ -14,6 +17,7 @@ class GameHostScreen extends ConsumerStatefulWidget {
 }
 
 class _GameHostScreenState extends ConsumerState<GameHostScreen> {
+  final UserDataService _userDataService = UserDataService();
   Timer? _questionTimer;
   int _timeLeft = 30;
 
@@ -249,9 +253,44 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
   }
 
   void _endGame() async {
-    await ref.read(currentGameProvider.notifier).endGame();
-    if (mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+    try {
+      final currentGame = ref.read(currentGameProvider);
+      final user = FirebaseAuth.instance.currentUser;
+      
+      // Save game data for host if game exists and user is authenticated
+      if (currentGame != null && user != null) {
+        await _userDataService.createGameHistoryFromGame(
+          currentGame,
+          user.uid,
+          'host',
+        );
+        debugPrint('Host game data saved successfully');
+      }
+      
+      await ref.read(currentGameProvider.notifier).endGame();
+      
+      if (mounted) {
+        // Navigate to main navigation showing stats tab to highlight the new game
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationScreen(initialIndex: 2), // Stats tab
+          ),
+          (Route<dynamic> route) => false,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error ending game: $e');
+      
+      // Fallback - just end the game and navigate normally
+      await ref.read(currentGameProvider.notifier).endGame();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationScreen(),
+          ),
+          (Route<dynamic> route) => false,
+        );
+      }
     }
   }
 }

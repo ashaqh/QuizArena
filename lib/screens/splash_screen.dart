@@ -1,46 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'home_screen.dart'; // Ensure this path is correct
-import 'auth/login_screen.dart'; // Ensure this path is correct
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Navigate after a delay
-    Timer(const Duration(seconds: 6), () {
-      if (mounted) {
-        _navigateBasedOnAuth();
-      }
-    });
-  }
-
-  void _navigateBasedOnAuth() {
-    if (!mounted) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    Widget nextScreen;
-
-    if (user != null) {
-      nextScreen = const HomeScreen();
-    } else {
-      nextScreen = const LoginScreen();
-    }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => nextScreen),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,31 +71,42 @@ class _SplashScreenState extends State<SplashScreen> {
                     // App Logo Image
                     Expanded(
                       child: Center(
-                        child: Image.asset(
-                          'assets/images/logo_circular_q.png.png',
-                          width: MediaQuery.of(context).size.width * 0.3,
-                          height: MediaQuery.of(context).size.width * 0.3,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 80,
-                                  color: Colors.white70,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Error loading logo',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/images/logo_circular_q.png.png',
+                              width: MediaQuery.of(context).size.width * 0.3,
+                              height: MediaQuery.of(context).size.width * 0.3,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 80,
+                                      color: Colors.white70,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Error loading logo',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 32),
+                            // Loading indicator
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 3,
+                            ),
+                          ],
                         ),
                       ),
                     ),

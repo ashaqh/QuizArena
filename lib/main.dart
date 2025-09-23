@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
-import 'screens/home_screen.dart';
+import 'widgets/main_navigation.dart';
 import 'screens/auth/login_screen.dart';
 
 /// Main entry point of the application
@@ -62,8 +62,41 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return Directionality(textDirection: TextDirection.ltr, child: child!);
       },
-      home: const SplashScreen(),
+      home: const SplashWrapper(),
     );
+  }
+}
+
+/// Wrapper that shows splash screen then transitions to auth checking
+class SplashWrapper extends StatefulWidget {
+  const SplashWrapper({super.key});
+
+  @override
+  State<SplashWrapper> createState() => _SplashWrapperState();
+}
+
+class _SplashWrapperState extends State<SplashWrapper> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show splash for 3 seconds then transition to auth wrapper
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showSplash = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSplash) {
+      return const SplashScreen();
+    }
+    return const AuthWrapper();
   }
 }
 
@@ -81,9 +114,9 @@ class AuthWrapper extends StatelessWidget {
           return const SplashScreen();
         }
 
-        // If user is authenticated, show home screen
+        // If user is authenticated, show main navigation
         if (snapshot.hasData && snapshot.data != null) {
-          return const HomeScreen();
+          return const MainNavigationScreen();
         }
 
         // If no user, show login screen

@@ -7,6 +7,7 @@ import '../models/game.dart';
 import '../models/player.dart';
 import '../services/sqlite_service.dart';
 import '../services/firestore_service.dart';
+import '../services/user_data_service.dart';
 
 /// Provider for SQLite service
 final sqliteServiceProvider = Provider<SQLiteService>((ref) {
@@ -16,6 +17,11 @@ final sqliteServiceProvider = Provider<SQLiteService>((ref) {
 /// Provider for Firestore service
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
   return FirestoreService();
+});
+
+/// Provider for UserData service
+final userDataServiceProvider = Provider<UserDataService>((ref) {
+  return UserDataService();
 });
 
 /// Provider for list of quizzes
