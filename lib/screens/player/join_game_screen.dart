@@ -38,14 +38,14 @@ class _JoinGameScreenState extends ConsumerState<JoinGameScreen> {
     if (user != null) {
       // Try to get display name first, then email username, then fallback
       String? userName;
-      
+
       if (user.displayName != null && user.displayName!.isNotEmpty) {
         userName = user.displayName;
       } else if (user.email != null && user.email!.isNotEmpty) {
         // Extract username from email (part before @)
         userName = user.email!.split('@').first;
       }
-      
+
       if (userName != null && userName.isNotEmpty) {
         // Set the initial text but keep it editable
         _playerNameController.text = userName;
