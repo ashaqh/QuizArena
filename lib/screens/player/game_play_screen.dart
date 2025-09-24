@@ -381,7 +381,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       debugPrint('Player: ${currentPlayer.name} (${currentPlayer.id})');
       debugPrint('Question: ${currentGame.currentQuestionIndex}');
       debugPrint('Selected answer: $_selectedAnswerId');
-      
+
       final updatedAnswers = Map<String, Map<int, String>>.from(
         currentGame.playerAnswers,
       );
@@ -455,12 +455,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     return game.players.map((player) {
       final playerAnswers = game.playerAnswers[player.id];
       final playerAnswer = playerAnswers?[game.currentQuestionIndex];
-      
+
       debugPrint('Player ${player.name} (${player.id}):');
       debugPrint('  Current score: ${player.totalScore}');
       debugPrint('  Answer: $playerAnswer');
       debugPrint('  Correct: ${playerAnswer == correctAnswerId}');
-      
+
       if (playerAnswers != null &&
           playerAnswers[game.currentQuestionIndex] == correctAnswerId) {
         // Correct answer, add 10 points

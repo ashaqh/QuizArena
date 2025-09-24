@@ -48,8 +48,12 @@ class UserDataService {
   /// Update user profile
   Future<void> updateUserProfile(UserProfile profile) async {
     debugPrint('📊 UPDATING USER PROFILE: ${profile.id}');
-    debugPrint('📊 PROFILE STATS: totalGamesPlayed=${profile.statistics.totalGamesPlayed}, totalGamesHosted=${profile.statistics.totalGamesHosted}');
-    debugPrint('📊 PROFILE STATS: averageScoreAsPlayer=${profile.statistics.averageScoreAsPlayer}, winStreak=${profile.statistics.currentWinStreak}');
+    debugPrint(
+      '📊 PROFILE STATS: totalGamesPlayed=${profile.statistics.totalGamesPlayed}, totalGamesHosted=${profile.statistics.totalGamesHosted}',
+    );
+    debugPrint(
+      '📊 PROFILE STATS: averageScoreAsPlayer=${profile.statistics.averageScoreAsPlayer}, winStreak=${profile.statistics.currentWinStreak}',
+    );
     await userProfiles.doc(profile.id).set(profile.toJson());
     debugPrint('📊 USER PROFILE UPDATED SUCCESSFULLY');
   }
@@ -141,11 +145,13 @@ class UserDataService {
     if (game.quiz?.title.isEmpty != false) return;
 
     // Use currentPlayer if provided, otherwise try to find by userId
-    final player = currentPlayer ?? game.players.firstWhere(
-      (p) => p.id == userId,
-      orElse: () =>
-          Player(id: userId, name: 'Unknown', totalScore: 0, scores: []),
-    );
+    final player =
+        currentPlayer ??
+        game.players.firstWhere(
+          (p) => p.id == userId,
+          orElse: () =>
+              Player(id: userId, name: 'Unknown', totalScore: 0, scores: []),
+        );
 
     // Use the actual player for calculations
     final actualPlayer = currentPlayer ?? player;
@@ -196,15 +202,19 @@ class UserDataService {
       },
     );
 
-    debugPrint('Creating game history record: ID=${record.id}, UserId=${record.userId}, Role=${record.role}, Score=${record.playerScore}');
+    debugPrint(
+      'Creating game history record: ID=${record.id}, UserId=${record.userId}, Role=${record.role}, Score=${record.playerScore}',
+    );
     await saveGameHistory(record);
   }
 
   /// Update user statistics based on game history
   Future<void> _updateUserStatistics(GameHistoryRecord record) async {
     debugPrint('📊 _updateUserStatistics CALLED for record ${record.id}');
-    debugPrint('📊 Game record: userId=${record.userId}, role=${record.role}, playerScore=${record.playerScore}, isWin=${record.isWin}');
-    
+    debugPrint(
+      '📊 Game record: userId=${record.userId}, role=${record.role}, playerScore=${record.playerScore}, isWin=${record.isWin}',
+    );
+
     final profileDoc = await userProfiles.doc(record.userId).get();
     if (!profileDoc.exists) {
       debugPrint('📊 User profile does not exist for user ${record.userId}');
@@ -270,9 +280,13 @@ class UserDataService {
       );
     }
 
-    debugPrint('📊 CALCULATED STATS: totalGamesPlayed=${updatedStats.totalGamesPlayed}, totalGamesHosted=${updatedStats.totalGamesHosted}');
-    debugPrint('📊 CALCULATED STATS: averageScoreAsPlayer=${updatedStats.averageScoreAsPlayer}, currentWinStreak=${updatedStats.currentWinStreak}');
-    
+    debugPrint(
+      '📊 CALCULATED STATS: totalGamesPlayed=${updatedStats.totalGamesPlayed}, totalGamesHosted=${updatedStats.totalGamesHosted}',
+    );
+    debugPrint(
+      '📊 CALCULATED STATS: averageScoreAsPlayer=${updatedStats.averageScoreAsPlayer}, currentWinStreak=${updatedStats.currentWinStreak}',
+    );
+
     final updatedProfile = profile.copyWith(statistics: updatedStats);
     await updateUserProfile(updatedProfile);
   }
@@ -399,13 +413,13 @@ class UserDataService {
       final historyQuery = await gameHistory
           .where('userId', isEqualTo: userId)
           .get();
-      
+
       final batch = _firestore.batch();
       for (final doc in historyQuery.docs) {
         batch.delete(doc.reference);
       }
       await batch.commit();
-      
+
       // Also reset statistics in user profile
       await userProfiles.doc(userId).update({
         'statistics.totalGamesPlayed': 0,
@@ -418,7 +432,7 @@ class UserDataService {
         'statistics.longestWinStreak': 0,
         'statistics.achievements': [],
       });
-      
+
       debugPrint('Game history cleared for user: $userId');
     } catch (e) {
       debugPrint('Error clearing game history: $e');

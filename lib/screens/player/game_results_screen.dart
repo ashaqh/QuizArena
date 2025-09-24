@@ -38,32 +38,40 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
 
       debugPrint('GameResults: _saveGameData called');
       debugPrint('GameResults: user = ${user?.uid}');
-      debugPrint('GameResults: currentPlayer = ${currentPlayer?.id} (${currentPlayer?.name})');
+      debugPrint(
+        'GameResults: currentPlayer = ${currentPlayer?.id} (${currentPlayer?.name})',
+      );
       debugPrint('GameResults: game.hostId = ${widget.game.hostId}');
-      debugPrint('GameResults: game.players.length = ${widget.game.players.length}');
+      debugPrint(
+        'GameResults: game.players.length = ${widget.game.players.length}',
+      );
 
       if (user != null) {
         // Find the player for this user in the game
         // We need to identify which player in the game corresponds to this Firebase user
         Player? userPlayer;
-        
+
         // First, try to use currentPlayer if it exists and is in the game
         if (currentPlayer != null) {
           try {
             userPlayer = widget.game.players.firstWhere(
               (p) => p.id == currentPlayer.id,
             );
-            debugPrint('GameResults: Found player by currentPlayer ID: ${userPlayer.id}');
+            debugPrint(
+              'GameResults: Found player by currentPlayer ID: ${userPlayer.id}',
+            );
           } catch (e) {
             debugPrint('GameResults: Current player not found in game players');
           }
         }
-        
+
         // If we couldn't find the player using currentPlayer, we need another strategy
         if (userPlayer == null) {
           // For now, let's try to find any player that's not the host
           // This is a fallback - in a real app, you'd have a better way to map Firebase users to players
-          final nonHostPlayers = widget.game.players.where((p) => p.id != widget.game.hostId).toList();
+          final nonHostPlayers = widget.game.players
+              .where((p) => p.id != widget.game.hostId)
+              .toList();
           if (nonHostPlayers.isNotEmpty) {
             // For now, just use the first non-host player as a fallback
             // In a real implementation, you'd have a proper user-to-player mapping
@@ -79,8 +87,10 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
           // Determine if this user is the host or a player
           final isHost = userPlayer.id == widget.game.hostId;
           final role = isHost ? 'host' : 'player';
-          
-          debugPrint('GameResults: isHost = $isHost (${userPlayer.id} == ${widget.game.hostId})');
+
+          debugPrint(
+            'GameResults: isHost = $isHost (${userPlayer.id} == ${widget.game.hostId})',
+          );
           debugPrint('GameResults: role = $role');
 
           // Save game history with the updated player data (now has correct scores)
@@ -92,7 +102,9 @@ class _GameResultsScreenState extends ConsumerState<GameResultsScreen> {
           );
 
           setState(() => _isGameDataSaved = true);
-          debugPrint('Game data saved successfully for $role with score: ${userPlayer.totalScore}');
+          debugPrint(
+            'Game data saved successfully for $role with score: ${userPlayer.totalScore}',
+          );
         } else {
           debugPrint('GameResults: Cannot find user player in game');
         }

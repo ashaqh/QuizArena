@@ -238,7 +238,7 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
     final questions = game.quiz?.questions ?? [];
     if (game.currentQuestionIndex >= questions.length) return game.players;
 
-    final currentQuestion = questions[game.currentQuestionIndex];      
+    final currentQuestion = questions[game.currentQuestionIndex];
     final correctAnswerId = currentQuestion.correctAnswerId;
 
     debugPrint('=== HOST SCORING QUESTION ${game.currentQuestionIndex} ===');
@@ -247,12 +247,12 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
     return game.players.map((player) {
       final playerAnswers = game.playerAnswers[player.id];
       final playerAnswer = playerAnswers?[game.currentQuestionIndex];
-      
+
       debugPrint('Player ${player.name} (${player.id}):');
       debugPrint('  Current score: ${player.totalScore}');
       debugPrint('  Answer: $playerAnswer');
       debugPrint('  Correct: ${playerAnswer == correctAnswerId}');
-      
+
       if (playerAnswers != null &&
           playerAnswers[game.currentQuestionIndex] == correctAnswerId) {
         // Correct answer, add 10 points
@@ -288,7 +288,9 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
           'host',
           currentPlayer: updatedHostPlayer,
         );
-        debugPrint('Host game data saved successfully with score: ${updatedHostPlayer.totalScore}');
+        debugPrint(
+          'Host game data saved successfully with score: ${updatedHostPlayer.totalScore}',
+        );
       }
 
       await ref.read(currentGameProvider.notifier).endGame();

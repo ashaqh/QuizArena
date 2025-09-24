@@ -39,10 +39,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           user.displayName ?? 'User',
           user.email ?? '',
         );
-        
+
         debugPrint('🏠 DASHBOARD: Loaded user profile for ${user.uid}');
-        debugPrint('🏠 DASHBOARD STATS: totalGamesPlayed=${_userProfile?.statistics.totalGamesPlayed}, totalGamesHosted=${_userProfile?.statistics.totalGamesHosted}');
-        debugPrint('🏠 DASHBOARD STATS: averageScoreAsPlayer=${_userProfile?.statistics.averageScoreAsPlayer}, currentWinStreak=${_userProfile?.statistics.currentWinStreak}');
+        debugPrint(
+          '🏠 DASHBOARD STATS: totalGamesPlayed=${_userProfile?.statistics.totalGamesPlayed}, totalGamesHosted=${_userProfile?.statistics.totalGamesHosted}',
+        );
+        debugPrint(
+          '🏠 DASHBOARD STATS: averageScoreAsPlayer=${_userProfile?.statistics.averageScoreAsPlayer}, currentWinStreak=${_userProfile?.statistics.currentWinStreak}',
+        );
 
         // Load recent games
         debugPrint('Dashboard: Loading game history for user: ${user.uid}');
@@ -52,7 +56,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
         debugPrint('Dashboard: Loaded ${_recentGames.length} recent games');
         for (final game in _recentGames) {
-          debugPrint('Dashboard: Game - ${game.quizTitle}, Role: ${game.role}, Score: ${game.playerScore}, PlayedAt: ${game.playedAt}');
+          debugPrint(
+            'Dashboard: Game - ${game.quizTitle}, Role: ${game.role}, Score: ${game.playerScore}, PlayedAt: ${game.playedAt}',
+          );
         }
       }
     } catch (e) {

@@ -35,11 +35,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           user.displayName ?? 'Anonymous Player',
           user.email ?? '',
         );
-        
+
         debugPrint('👤 PROFILE: Loaded user profile for ${user.uid}');
-        debugPrint('👤 PROFILE STATS: totalGamesPlayed=${profile.statistics.totalGamesPlayed}, totalGamesHosted=${profile.statistics.totalGamesHosted}');
-        debugPrint('👤 PROFILE STATS: averageScoreAsPlayer=${profile.statistics.averageScoreAsPlayer}, currentWinStreak=${profile.statistics.currentWinStreak}');
-        
+        debugPrint(
+          '👤 PROFILE STATS: totalGamesPlayed=${profile.statistics.totalGamesPlayed}, totalGamesHosted=${profile.statistics.totalGamesHosted}',
+        );
+        debugPrint(
+          '👤 PROFILE STATS: averageScoreAsPlayer=${profile.statistics.averageScoreAsPlayer}, currentWinStreak=${profile.statistics.currentWinStreak}',
+        );
+
         setState(() => _userProfile = profile);
       }
     } catch (e) {
@@ -405,7 +409,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.refresh, color: Colors.orange),
               title: const Text('Clear Game History'),
-              subtitle: const Text('Reset all game data for testing (keeps profile)'),
+              subtitle: const Text(
+                'Reset all game data for testing (keeps profile)',
+              ),
               onTap: _showClearHistoryDialog,
             ),
             ListTile(
@@ -490,10 +496,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await _userDataService.clearGameHistory(user.uid);
-        
+
         // Reload the profile to reflect changes
         await _loadUserProfile();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Game history cleared successfully')),
@@ -502,9 +508,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error clearing history: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error clearing history: $e')));
       }
     }
   }
