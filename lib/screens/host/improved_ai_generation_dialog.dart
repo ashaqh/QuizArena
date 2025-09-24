@@ -3,25 +3,28 @@ import '../../services/improved_ai_service.dart';
 
 /// Improved AI Generation Dialog with better UX and error handling
 class ImprovedAIGenerationDialog extends StatefulWidget {
-  final Function(String topic, String difficulty, int count, {String? modelId}) onGenerate;
+  final Function(String topic, String difficulty, int count, {String? modelId})
+  onGenerate;
 
   const ImprovedAIGenerationDialog({super.key, required this.onGenerate});
 
   @override
-  State<ImprovedAIGenerationDialog> createState() => _ImprovedAIGenerationDialogState();
+  State<ImprovedAIGenerationDialog> createState() =>
+      _ImprovedAIGenerationDialogState();
 }
 
-class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog> {
+class _ImprovedAIGenerationDialogState
+    extends State<ImprovedAIGenerationDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _topicController;
   String _difficulty = 'medium';
   late TextEditingController _countController;
   String? _selectedModelId;
-  
+
   bool _isLoadingConnections = true;
   Map<String, bool> _connectionStatus = {};
   List<Map<String, dynamic>> _availableModels = [];
-  
+
   // Predefined topic suggestions
   final List<String> _topicSuggestions = [
     'World History',
@@ -52,22 +55,22 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
   Future<void> _testConnections() async {
     try {
       final aiService = ImprovedAIService();
-      
+
       // Test connections and fetch models in parallel
       final futures = await Future.wait([
         aiService.testConnections(),
         aiService.getAvailableModels(),
       ]);
-      
+
       final status = futures[0] as Map<String, bool>;
       final models = futures[1] as List<Map<String, dynamic>>;
-      
+
       setState(() {
         _connectionStatus = status;
         _availableModels = models;
         _isLoadingConnections = false;
       });
-      
+
       debugPrint('Loaded ${models.length} AI models');
     } catch (e) {
       debugPrint('Error testing connections: $e');
@@ -106,23 +109,23 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
                 // Connection Status Card
                 _buildConnectionStatusCard(),
                 const SizedBox(height: 16),
-                
+
                 // Topic Field with Suggestions
                 _buildTopicField(),
                 const SizedBox(height: 16),
-                
+
                 // Difficulty Selection
                 _buildDifficultyField(),
                 const SizedBox(height: 16),
-                
+
                 // Count Field
                 _buildCountField(),
                 const SizedBox(height: 16),
-                
+
                 // AI Model Selection
                 _buildModelSelection(),
                 const SizedBox(height: 16),
-                
+
                 // Tips Card
                 _buildTipsCard(),
               ],
@@ -166,7 +169,9 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
     }
 
     final hasConnection = _connectionStatus.values.any((status) => status);
-    final workingServices = _connectionStatus.entries.where((entry) => entry.value).length;
+    final workingServices = _connectionStatus.entries
+        .where((entry) => entry.value)
+        .length;
     final totalServices = _connectionStatus.length;
 
     return Card(
@@ -185,11 +190,13 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  hasConnection 
-                    ? 'AI Services: $workingServices/$totalServices available'
-                    : 'AI Services: Using fallback mode',
+                  hasConnection
+                      ? 'AI Services: $workingServices/$totalServices available'
+                      : 'AI Services: Using fallback mode',
                   style: TextStyle(
-                    color: hasConnection ? Colors.green.shade700 : Colors.orange.shade700,
+                    color: hasConnection
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -199,10 +206,7 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
               const SizedBox(height: 4),
               Text(
                 'Don\'t worry! We\'ll create template questions you can edit.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.orange.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade600),
               ),
             ],
           ],
@@ -249,10 +253,7 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
           runSpacing: 4,
           children: _topicSuggestions.map((suggestion) {
             return ActionChip(
-              label: Text(
-                suggestion,
-                style: const TextStyle(fontSize: 11),
-              ),
+              label: Text(suggestion, style: const TextStyle(fontSize: 11)),
               onPressed: () {
                 _topicController.text = suggestion;
                 setState(() {});
@@ -283,7 +284,10 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
               const SizedBox(width: 8),
               const Text('Easy'),
               const SizedBox(width: 8),
-              Text('(45s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              Text(
+                '(45s)',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -295,7 +299,10 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
               const SizedBox(width: 8),
               const Text('Medium'),
               const SizedBox(width: 8),
-              Text('(30s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              Text(
+                '(30s)',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -303,11 +310,18 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
           value: 'hard',
           child: Row(
             children: [
-              Icon(Icons.sentiment_very_dissatisfied, color: Colors.red, size: 16),
+              Icon(
+                Icons.sentiment_very_dissatisfied,
+                color: Colors.red,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               const Text('Hard'),
               const SizedBox(width: 8),
-              Text('(20s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              Text(
+                '(20s)',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -344,16 +358,20 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
   }
 
   Widget _buildModelSelection() {
-    final hasWorkingConnections = _connectionStatus.values.any((status) => status);
+    final hasWorkingConnections = _connectionStatus.values.any(
+      (status) => status,
+    );
     final hasModels = _availableModels.isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
           value: _selectedModelId,
           decoration: InputDecoration(
-            labelText: hasModels ? 'AI Model (${_availableModels.length} available)' : 'AI Model (Optional)',
+            labelText: hasModels
+                ? 'AI Model (${_availableModels.length} available)'
+                : 'AI Model (Optional)',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.psychology),
           ),
@@ -367,8 +385,9 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
               ..._availableModels.map((model) {
                 final id = model['id'] as String;
                 final name = model['name'] as String;
-                final isRecommended = id.contains('llama') || id.contains('mistral');
-                
+                final isRecommended =
+                    id.contains('llama') || id.contains('mistral');
+
                 return DropdownMenuItem<String>(
                   value: id,
                   child: Row(
@@ -380,9 +399,13 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
                       ],
                       Flexible(
                         child: Text(
-                          name.length > 35 ? '${name.substring(0, 32)}...' : name,
+                          name.length > 35
+                              ? '${name.substring(0, 32)}...'
+                              : name,
                           style: TextStyle(
-                            fontWeight: isRecommended ? FontWeight.w500 : FontWeight.normal,
+                            fontWeight: isRecommended
+                                ? FontWeight.w500
+                                : FontWeight.normal,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -421,19 +444,13 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
           const SizedBox(height: 8),
           Text(
             '✨ Found ${_availableModels.length} free AI models! Starred models are recommended.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.green.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.green.shade600),
           ),
         ] else if (!hasWorkingConnections) ...[
           const SizedBox(height: 8),
           Text(
             'AI services are not available. We\'ll create template questions based on your topic.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.orange.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.orange.shade600),
           ),
         ],
       ],
@@ -450,7 +467,11 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb_outline, color: Colors.blue.shade700, size: 16),
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: Colors.blue.shade700,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Tips for better results:',
@@ -467,16 +488,15 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
               '• Use proper nouns and terminology',
               '• Start with fewer questions (3-5) to test quality',
               '• All generated questions can be edited after creation',
-            ].map((tip) => Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                tip,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue.shade600,
+            ].map(
+              (tip) => Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  tip,
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
                 ),
               ),
-            )),
+            ),
           ],
         ),
       ),
@@ -484,26 +504,21 @@ class _ImprovedAIGenerationDialogState extends State<ImprovedAIGenerationDialog>
   }
 
   bool _canGenerate() {
-    return _topicController.text.trim().length >= 3 && 
-           _countController.text.isNotEmpty &&
-           !_isLoadingConnections;
+    return _topicController.text.trim().length >= 3 &&
+        _countController.text.isNotEmpty &&
+        !_isLoadingConnections;
   }
 
   void _handleGenerate() {
     if (_formKey.currentState!.validate()) {
       final topic = _topicController.text.trim();
       final count = int.parse(_countController.text);
-      
+
       // Close dialog first
       Navigator.pop(context);
-      
+
       // Call the generation function
-      widget.onGenerate(
-        topic,
-        _difficulty,
-        count,
-        modelId: _selectedModelId,
-      );
+      widget.onGenerate(topic, _difficulty, count, modelId: _selectedModelId);
     }
   }
 }

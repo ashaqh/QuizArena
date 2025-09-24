@@ -23,7 +23,8 @@ class AIGenerationProgressDialog extends StatefulWidget {
   });
 
   @override
-  State<AIGenerationProgressDialog> createState() => _AIGenerationProgressDialogState();
+  State<AIGenerationProgressDialog> createState() =>
+      _AIGenerationProgressDialogState();
 }
 
 class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
@@ -32,45 +33,37 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
   late AnimationController _pulseController;
   late Animation<double> _progressAnimation;
   late Animation<double> _pulseAnimation;
-  
+
   StreamSubscription<GenerationProgress>? _progressSubscription;
   GenerationProgress? _currentProgress;
   bool _canCancel = true;
   bool _isCompleted = false;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     )..repeat(reverse: true);
-    
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _pulseAnimation = Tween<double>(
-      begin: 0.6,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _progressController, curve: Curves.easeInOut),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _startGeneration();
   }
-  
+
   @override
   void dispose() {
     _progressSubscription?.cancel();
@@ -78,85 +71,87 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
     _pulseController.dispose();
     super.dispose();
   }
-  
+
   void _startGeneration() async {
     final aiService = RobustAIService();
-    
-    _progressSubscription = aiService.generateQuestionsWithProgress(
-      topic: widget.topic,
-      difficulty: widget.difficulty,
-      count: widget.count,
-      preferredModel: widget.preferredModel,
-    ).listen(
-      (progress) {
-        setState(() {
-          _currentProgress = progress;
-        });
-        
-        // Animate progress bar
-        _progressController.animateTo(progress.progress);
-        
-        // Handle completion
-        if (progress.status == GenerationStatus.completed) {
-          _handleSuccess(progress.questions ?? []);
-        } else if (progress.status == GenerationStatus.failed) {
-          _handleError(progress.message);
-        }
-        
-        // Disable cancel after a certain point
-        if (progress.progress > 0.8) {
-          setState(() {
-            _canCancel = false;
-          });
-        }
-      },
-      onError: (error) {
-        _handleError(error.toString());
-      },
-    );
+
+    _progressSubscription = aiService
+        .generateQuestionsWithProgress(
+          topic: widget.topic,
+          difficulty: widget.difficulty,
+          count: widget.count,
+          preferredModel: widget.preferredModel,
+        )
+        .listen(
+          (progress) {
+            setState(() {
+              _currentProgress = progress;
+            });
+
+            // Animate progress bar
+            _progressController.animateTo(progress.progress);
+
+            // Handle completion
+            if (progress.status == GenerationStatus.completed) {
+              _handleSuccess(progress.questions ?? []);
+            } else if (progress.status == GenerationStatus.failed) {
+              _handleError(progress.message);
+            }
+
+            // Disable cancel after a certain point
+            if (progress.progress > 0.8) {
+              setState(() {
+                _canCancel = false;
+              });
+            }
+          },
+          onError: (error) {
+            _handleError(error.toString());
+          },
+        );
   }
-  
+
   void _handleSuccess(List<Question> questions) async {
     setState(() {
       _isCompleted = true;
       _canCancel = false;
     });
-    
+
     _pulseController.stop();
     _progressController.animateTo(1.0);
-    
+
     // Small delay to show completion
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     if (mounted) {
       Navigator.of(context).pop();
       widget.onSuccess(questions);
     }
   }
-  
+
   void _handleError(String error) {
     setState(() {
       _isCompleted = true;
       _canCancel = false;
     });
-    
+
     _pulseController.stop();
-    
+
     if (mounted) {
       Navigator.of(context).pop();
       widget.onError(error);
     }
   }
-  
+
   void _cancelGeneration() {
     _progressSubscription?.cancel();
     Navigator.of(context).pop();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final progress = _currentProgress;
-    
+
     return WillPopScope(
       onWillPop: () async => _canCancel,
       child: AlertDialog(
@@ -175,7 +170,9 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                       return Transform.scale(
                         scale: _isCompleted ? 1.0 : _pulseAnimation.value,
                         child: Icon(
-                          _isCompleted ? Icons.check_circle : Icons.auto_awesome,
+                          _isCompleted
+                              ? Icons.check_circle
+                              : Icons.auto_awesome,
                           color: _isCompleted ? Colors.green : Colors.blue,
                           size: 32,
                         ),
@@ -189,15 +186,13 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                       children: [
                         Text(
                           'Generating Questions',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           '${widget.count} questions about "${widget.topic}"',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -205,7 +200,7 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Progress bar
               AnimatedBuilder(
                 animation: _progressAnimation,
@@ -217,15 +212,13 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                         children: [
                           Text(
                             progress?.message ?? 'Initializing...',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
                           Text(
                             '${(_progressAnimation.value * 100).toInt()}%',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                         ],
                       ),
@@ -242,11 +235,12 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                   );
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Simple tip text
-              if (progress != null && progress.status != GenerationStatus.completed) ...[
+              if (progress != null &&
+                  progress.status != GenerationStatus.completed) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -255,14 +249,17 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.blue.shade600,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'This may take a few moments. We\'re trying multiple AI models to get the best results.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.blue.shade600,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.blue.shade600),
                         ),
                       ),
                     ],
@@ -289,12 +286,6 @@ class _AIGenerationProgressDialogState extends State<AIGenerationProgressDialog>
       ),
     );
   }
-  
-
-  
-
-  
-
 }
 
 /// Utility function to show the AI generation progress dialog

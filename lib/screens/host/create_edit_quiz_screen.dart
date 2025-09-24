@@ -361,11 +361,13 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
                 setState(() {
                   _questions.addAll(questions);
                 });
-                
+
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('🎉 Successfully added ${questions.length} questions about "$topic"!'),
+                    content: Text(
+                      '🎉 Successfully added ${questions.length} questions about "$topic"!',
+                    ),
                     backgroundColor: Colors.green,
                     duration: const Duration(seconds: 3),
                   ),

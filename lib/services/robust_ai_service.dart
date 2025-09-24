@@ -66,7 +66,8 @@ class GenerationProgress {
       attempt: attempt ?? this.attempt,
       maxAttempts: maxAttempts ?? this.maxAttempts,
       progress: progress ?? this.progress,
-      estimatedTimeRemaining: estimatedTimeRemaining ?? this.estimatedTimeRemaining,
+      estimatedTimeRemaining:
+          estimatedTimeRemaining ?? this.estimatedTimeRemaining,
       logs: logs ?? this.logs,
       questions: questions ?? this.questions,
     );
@@ -105,7 +106,7 @@ class EnhancedAIProvider {
   final int maxRetries;
   final bool supportsBatch;
   final Map<String, dynamic> headers;
-  
+
   // Success tracking
   int successCount = 0;
   int totalAttempts = 0;
@@ -125,11 +126,12 @@ class EnhancedAIProvider {
     this.headers = const {},
   });
 
-  double get successRate => totalAttempts > 0 ? successCount / totalAttempts : 0.0;
-  
-  bool get isRecentlySuccessful => 
-    lastSuccess != null && 
-    DateTime.now().difference(lastSuccess!).inMinutes < 30;
+  double get successRate =>
+      totalAttempts > 0 ? successCount / totalAttempts : 0.0;
+
+  bool get isRecentlySuccessful =>
+      lastSuccess != null &&
+      DateTime.now().difference(lastSuccess!).inMinutes < 30;
 
   void recordSuccess() {
     successCount++;
@@ -153,7 +155,7 @@ class RobustAIService {
   final Uuid _uuid = const Uuid();
   final List<EnhancedAIProvider> _providers = [];
   final Map<String, List<Question>> _questionCache = {};
-  
+
   RobustAIService() {
     _initializeProviders();
   }
@@ -161,25 +163,25 @@ class RobustAIService {
   Future<void> _initializeProviders() async {
     // Get available models dynamically from OpenRouter
     final availableModels = await _getAvailableModels();
-    
+
     _providers.addAll([
       // Primary: OpenRouter with all available free models
       EnhancedAIProvider(
         name: 'OpenRouter',
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        models: availableModels.isNotEmpty 
-          ? availableModels.map((model) => model['id'] as String).toList()
-          : [
-              'meta-llama/llama-3.2-3b-instruct:free',
-              'mistralai/mistral-7b-instruct:free',
-            ],
+        models: availableModels.isNotEmpty
+            ? availableModels.map((model) => model['id'] as String).toList()
+            : [
+                'meta-llama/llama-3.2-3b-instruct:free',
+                'mistralai/mistral-7b-instruct:free',
+              ],
         requiresAuth: true,
         priority: 1,
         timeout: const Duration(seconds: 45),
         maxRetries: 3,
         supportsBatch: true,
       ),
-      
+
       // Fallback: Template Generator (always works)
       EnhancedAIProvider(
         name: 'Template Generator',
@@ -192,8 +194,10 @@ class RobustAIService {
         supportsBatch: true,
       ),
     ]);
-    
-    debugPrint('🤖 RobustAI: Initialized with ${availableModels.length} models');
+
+    debugPrint(
+      '🤖 RobustAI: Initialized with ${availableModels.length} models',
+    );
   }
 
   Future<List<Map<String, dynamic>>> _getAvailableModels() async {
@@ -204,33 +208,41 @@ class RobustAIService {
         return [];
       }
 
-      final response = await http.get(
-        Uri.parse('https://openrouter.ai/api/v1/models'),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse('https://openrouter.ai/api/v1/models'),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final models = data['data'] as List<dynamic>;
-        
+
         // Filter for free models only
         final freeModels = models
-            .where((model) => 
-                model['pricing']?['prompt']?.toString() == '0' ||
-                model['id']?.toString().contains(':free') == true)
-            .map((model) => {
-              'id': model['id'] as String,
-              'name': model['name'] as String? ?? model['id'] as String,
-            })
+            .where(
+              (model) =>
+                  model['pricing']?['prompt']?.toString() == '0' ||
+                  model['id']?.toString().contains(':free') == true,
+            )
+            .map(
+              (model) => {
+                'id': model['id'] as String,
+                'name': model['name'] as String? ?? model['id'] as String,
+              },
+            )
             .toList();
-        
+
         debugPrint('🤖 RobustAI: Found ${freeModels.length} free models');
         return freeModels;
       } else {
-        debugPrint('🤖 RobustAI: Failed to fetch models: ${response.statusCode}');
+        debugPrint(
+          '🤖 RobustAI: Failed to fetch models: ${response.statusCode}',
+        );
         return [];
       }
     } catch (e) {
@@ -246,7 +258,6 @@ class RobustAIService {
     required int count,
     String? preferredModel,
   }) async* {
-    
     // Initialize providers if not already done
     if (_providers.isEmpty) {
       yield GenerationProgress(
@@ -256,73 +267,84 @@ class RobustAIService {
       );
       await _initializeProviders();
     }
-    
+
     yield GenerationProgress(
       status: GenerationStatus.fetchingModels,
       message: 'Preparing to generate questions...',
       progress: 0.1,
     );
-    
+
     // If user selected a specific model, only use that model
     if (preferredModel != null && preferredModel != 'fallback') {
-      yield* _generateWithSpecificModel(topic, difficulty, count, preferredModel);
+      yield* _generateWithSpecificModel(
+        topic,
+        difficulty,
+        count,
+        preferredModel,
+      );
       return;
     }
-    
+
     // Otherwise, try all available models
     final sortedProviders = _getSortedProviders();
-    
+
     // Try each provider with intelligent retry logic
-    for (int providerIndex = 0; providerIndex < sortedProviders.length; providerIndex++) {
+    for (
+      int providerIndex = 0;
+      providerIndex < sortedProviders.length;
+      providerIndex++
+    ) {
       final provider = sortedProviders[providerIndex];
-      
+
       yield GenerationProgress(
         status: GenerationStatus.trying,
         message: 'Generating questions with AI...',
         progress: 0.2 + (providerIndex * 0.6 / sortedProviders.length),
       );
-      
+
       // Try models for this provider
       final modelsToTry = _getOptimalModels(provider, preferredModel);
-      
+
       for (int modelIndex = 0; modelIndex < modelsToTry.length; modelIndex++) {
         final model = modelsToTry[modelIndex];
-        
+
         yield GenerationProgress(
           status: GenerationStatus.processing,
           message: 'Generating questions...',
-          progress: 0.3 + (providerIndex * 0.5 / sortedProviders.length) + 
-                   (modelIndex * 0.2 / modelsToTry.length),
+          progress:
+              0.3 +
+              (providerIndex * 0.5 / sortedProviders.length) +
+              (modelIndex * 0.2 / modelsToTry.length),
         );
-        
+
         try {
           final questions = await _tryGenerateWithProvider(
-            provider, 
-            model, 
-            topic, 
-            difficulty, 
-            count
+            provider,
+            model,
+            topic,
+            difficulty,
+            count,
           );
-          
+
           if (questions.isNotEmpty) {
             provider.recordSuccess();
-            
+
             yield GenerationProgress(
               status: GenerationStatus.finalizing,
               message: 'Finalizing ${questions.length} questions...',
               progress: 0.9,
             );
-            
+
             // Cache successful results
             _cacheQuestions(topic, difficulty, questions);
-            
+
             yield GenerationProgress(
               status: GenerationStatus.completed,
               message: 'Successfully generated ${questions.length} questions!',
               progress: 1.0,
               questions: questions,
             );
-            
+
             return;
           }
         } catch (e) {
@@ -332,16 +354,20 @@ class RobustAIService {
         }
       }
     }
-    
+
     // All providers failed - create intelligent fallbacks
     yield GenerationProgress(
       status: GenerationStatus.processing,
       message: 'Creating template questions...',
       progress: 0.85,
     );
-    
-    final fallbackQuestions = _createIntelligentFallbacks(topic, difficulty, count);
-    
+
+    final fallbackQuestions = _createIntelligentFallbacks(
+      topic,
+      difficulty,
+      count,
+    );
+
     yield GenerationProgress(
       status: GenerationStatus.completed,
       message: 'Generated ${fallbackQuestions.length} template questions',
@@ -361,19 +387,19 @@ class RobustAIService {
       message: 'Generating with your selected model...',
       progress: 0.2,
     );
-    
+
     // Find the provider that has this model
     final provider = _providers.firstWhere(
       (p) => p.models.contains(selectedModel),
       orElse: () => _providers.first, // Fallback to first provider
     );
-    
+
     yield GenerationProgress(
       status: GenerationStatus.processing,
       message: 'Generating questions...',
       progress: 0.5,
     );
-    
+
     try {
       final questions = await _tryGenerateWithProvider(
         provider,
@@ -382,11 +408,11 @@ class RobustAIService {
         difficulty,
         count,
       );
-      
+
       if (questions.isNotEmpty) {
         provider.recordSuccess();
         _cacheQuestions(topic, difficulty, questions);
-        
+
         yield GenerationProgress(
           status: GenerationStatus.completed,
           message: 'Successfully generated ${questions.length} questions!',
@@ -398,16 +424,20 @@ class RobustAIService {
       provider.recordFailure(e.toString());
       debugPrint('Failed with selected model $selectedModel: $e');
     }
-    
+
     // If selected model fails, create fallbacks
     yield GenerationProgress(
       status: GenerationStatus.processing,
       message: 'Selected model unavailable, creating template questions...',
       progress: 0.8,
     );
-    
-    final fallbackQuestions = _createIntelligentFallbacks(topic, difficulty, count);
-    
+
+    final fallbackQuestions = _createIntelligentFallbacks(
+      topic,
+      difficulty,
+      count,
+    );
+
     yield GenerationProgress(
       status: GenerationStatus.completed,
       message: 'Generated ${fallbackQuestions.length} template questions',
@@ -430,7 +460,7 @@ class RobustAIService {
     String? error;
     int totalAttempts = 0;
     bool success = false;
-    
+
     await for (final progress in generateQuestionsWithProgress(
       topic: topic,
       difficulty: difficulty,
@@ -440,16 +470,17 @@ class RobustAIService {
       if (progress.attempt != null) {
         totalAttempts = progress.attempt!;
       }
-      
+
       if (progress.status == GenerationStatus.completed) {
         success = true;
         usedProvider = progress.currentProvider;
         usedModel = progress.currentModel;
-        
+
         // Get the cached questions or fallbacks
         final cacheKey = '${topic}_${difficulty}_$count';
-        finalQuestions = _questionCache[cacheKey] ?? 
-                        _createIntelligentFallbacks(topic, difficulty, count);
+        finalQuestions =
+            _questionCache[cacheKey] ??
+            _createIntelligentFallbacks(topic, difficulty, count);
         break;
       } else if (progress.status == GenerationStatus.failed) {
         error = progress.message;
@@ -457,7 +488,7 @@ class RobustAIService {
         break;
       }
     }
-    
+
     return GenerationResult(
       success: success,
       questions: finalQuestions,
@@ -471,35 +502,38 @@ class RobustAIService {
 
   List<EnhancedAIProvider> _getSortedProviders() {
     final providers = List<EnhancedAIProvider>.from(_providers);
-    
+
     // Sort by priority, then by success rate, then by recent success
     providers.sort((a, b) {
       // Primary: Priority (lower is better)
       if (a.priority != b.priority) {
         return a.priority.compareTo(b.priority);
       }
-      
+
       // Secondary: Recent success
       if (a.isRecentlySuccessful != b.isRecentlySuccessful) {
         return a.isRecentlySuccessful ? -1 : 1;
       }
-      
+
       // Tertiary: Success rate
       return b.successRate.compareTo(a.successRate);
     });
-    
+
     return providers;
   }
 
-  List<String> _getOptimalModels(EnhancedAIProvider provider, String? preferredModel) {
+  List<String> _getOptimalModels(
+    EnhancedAIProvider provider,
+    String? preferredModel,
+  ) {
     final models = List<String>.from(provider.models);
-    
+
     // Put preferred model first if it exists in this provider
     if (preferredModel != null && models.contains(preferredModel)) {
       models.remove(preferredModel);
       models.insert(0, preferredModel);
     }
-    
+
     // Shuffle remaining models to distribute load
     if (models.length > 1) {
       final random = Random();
@@ -507,11 +541,9 @@ class RobustAIService {
       remaining.shuffle(random);
       models.replaceRange(1, models.length, remaining);
     }
-    
+
     return models;
   }
-
-
 
   Future<List<Question>> _tryGenerateWithProvider(
     EnhancedAIProvider provider,
@@ -548,37 +580,44 @@ class RobustAIService {
     }
 
     final prompt = _buildEnhancedPrompt(topic, difficulty, count);
-    
-    final response = await http.post(
-      Uri.parse(provider.baseUrl),
-      headers: {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/your-repo',
-        'X-Title': 'QuizArena AI Generation',
-      },
-      body: json.encode({
-        'model': model,
-        'messages': [
-          {'role': 'system', 'content': 'You are an expert quiz question generator.'},
-          {'role': 'user', 'content': prompt},
-        ],
-        'max_tokens': 2000,
-        'temperature': 0.7,
-        'stream': false,
-      }),
-    ).timeout(provider.timeout);
+
+    final response = await http
+        .post(
+          Uri.parse(provider.baseUrl),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com/your-repo',
+            'X-Title': 'QuizArena AI Generation',
+          },
+          body: json.encode({
+            'model': model,
+            'messages': [
+              {
+                'role': 'system',
+                'content': 'You are an expert quiz question generator.',
+              },
+              {'role': 'user', 'content': prompt},
+            ],
+            'max_tokens': 2000,
+            'temperature': 0.7,
+            'stream': false,
+          }),
+        )
+        .timeout(provider.timeout);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final content = data['choices']?[0]?['message']?['content'] as String?;
-      
+
       if (content != null) {
         return _parseQuestionsFromResponse(content);
       }
     }
-    
-    throw Exception('OpenRouter API error: ${response.statusCode} - ${response.body}');
+
+    throw Exception(
+      'OpenRouter API error: ${response.statusCode} - ${response.body}',
+    );
   }
 
   Future<List<Question>> _tryHuggingFace(
@@ -589,41 +628,39 @@ class RobustAIService {
     int count,
   ) async {
     final prompt = _buildSimplePrompt(topic, difficulty, count);
-    
-    final response = await http.post(
-      Uri.parse('${provider.baseUrl}/$model'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'inputs': prompt,
-        'parameters': {
-          'max_new_tokens': 1000,
-          'temperature': 0.7,
-          'do_sample': true,
-          'return_full_text': false,
-        },
-        'options': {
-          'wait_for_model': true,
-        },
-      }),
-    ).timeout(provider.timeout);
+
+    final response = await http
+        .post(
+          Uri.parse('${provider.baseUrl}/$model'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'inputs': prompt,
+            'parameters': {
+              'max_new_tokens': 1000,
+              'temperature': 0.7,
+              'do_sample': true,
+              'return_full_text': false,
+            },
+            'options': {'wait_for_model': true},
+          }),
+        )
+        .timeout(provider.timeout);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       String content = '';
-      
+
       if (data is List && data.isNotEmpty) {
         content = data[0]['generated_text'] ?? '';
       } else if (data is Map) {
         content = data['generated_text'] ?? '';
       }
-      
+
       if (content.isNotEmpty) {
         return _parseQuestionsFromResponse(content);
       }
     }
-    
+
     throw Exception('HuggingFace API error: ${response.statusCode}');
   }
 
@@ -635,32 +672,32 @@ class RobustAIService {
     int count,
   ) async {
     final prompt = _buildSimplePrompt(topic, difficulty, count);
-    
-    final response = await http.post(
-      Uri.parse(provider.baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'model': model,
-        'prompt': prompt,
-        'max_tokens': 1000,
-        'temperature': 0.7,
-        'k': 0,
-        'stop_sequences': [],
-        'return_likelihoods': 'NONE',
-      }),
-    ).timeout(provider.timeout);
+
+    final response = await http
+        .post(
+          Uri.parse(provider.baseUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'model': model,
+            'prompt': prompt,
+            'max_tokens': 1000,
+            'temperature': 0.7,
+            'k': 0,
+            'stop_sequences': [],
+            'return_likelihoods': 'NONE',
+          }),
+        )
+        .timeout(provider.timeout);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final content = data['generations']?[0]?['text'] as String?;
-      
+
       if (content != null) {
         return _parseQuestionsFromResponse(content);
       }
     }
-    
+
     throw Exception('Cohere API error: ${response.statusCode}');
   }
 
@@ -711,22 +748,26 @@ Topic: $topic''';
 
   String _getDifficultyDescription(String difficulty) {
     switch (difficulty.toLowerCase()) {
-      case 'easy': return 'basic facts and simple concepts';
-      case 'medium': return 'moderate understanding and application';
-      case 'hard': return 'advanced concepts and critical thinking';
-      default: return 'appropriate level of challenge';
+      case 'easy':
+        return 'basic facts and simple concepts';
+      case 'medium':
+        return 'moderate understanding and application';
+      case 'hard':
+        return 'advanced concepts and critical thinking';
+      default:
+        return 'appropriate level of challenge';
     }
   }
 
   List<Question> _parseQuestionsFromResponse(String content) {
     final questions = <Question>[];
-    
+
     try {
       // Try to parse as JSON first
       if (content.trim().startsWith('[') || content.trim().startsWith('{')) {
         final jsonData = json.decode(content);
         final questionsData = jsonData is List ? jsonData : [jsonData];
-        
+
         for (final questionData in questionsData) {
           final question = _parseJsonQuestion(questionData);
           if (question != null) questions.add(question);
@@ -740,7 +781,7 @@ Topic: $topic''';
       // Try text parsing as fallback
       questions.addAll(_parseTextQuestions(content));
     }
-    
+
     return questions;
   }
 
@@ -748,28 +789,28 @@ Topic: $topic''';
     try {
       final questionText = data['question'] as String?;
       final answersData = data['answers'] as List<dynamic>?;
-      
-      if (questionText == null || answersData == null || answersData.length != 4) {
+
+      if (questionText == null ||
+          answersData == null ||
+          answersData.length != 4) {
         return null;
       }
-      
+
       final answers = <Answer>[];
       String? correctAnswerId;
-      
+
       for (final answerData in answersData) {
         final answerId = _uuid.v4();
         final answerText = answerData['text'] as String;
         final isCorrect = answerData['isCorrect'] as bool? ?? false;
-        
-        answers.add(Answer(
-          id: answerId,
-          text: answerText,
-          isCorrect: isCorrect,
-        ));
-        
+
+        answers.add(
+          Answer(id: answerId, text: answerText, isCorrect: isCorrect),
+        );
+
         if (isCorrect) correctAnswerId = answerId;
       }
-      
+
       return Question(
         id: _uuid.v4(),
         text: questionText,
@@ -784,90 +825,113 @@ Topic: $topic''';
 
   List<Question> _parseTextQuestions(String content) {
     final questions = <Question>[];
-    final lines = content.split('\n').where((line) => line.trim().isNotEmpty).toList();
-    
+    final lines = content
+        .split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .toList();
+
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
-      
+
       if (line.startsWith('Q:') || line.contains('?')) {
         final questionText = line.replaceFirst(RegExp(r'^Q:\s*'), '').trim();
         final answers = <Answer>[];
         String? correctAnswerId;
-        
+
         // Look for answers in next few lines
         for (int j = i + 1; j < lines.length && j < i + 5; j++) {
           final answerLine = lines[j].trim();
           if (answerLine.isEmpty) break;
-          
-          final match = RegExp(r'^[A-D]\)\s*(.+?)(\s*✓)?$').firstMatch(answerLine);
+
+          final match = RegExp(
+            r'^[A-D]\)\s*(.+?)(\s*✓)?$',
+          ).firstMatch(answerLine);
           if (match != null) {
             final answerId = _uuid.v4();
             final answerText = match.group(1)!.trim();
             final isCorrect = match.group(2) != null;
-            
-            answers.add(Answer(
-              id: answerId,
-              text: answerText,
-              isCorrect: isCorrect,
-            ));
-            
+
+            answers.add(
+              Answer(id: answerId, text: answerText, isCorrect: isCorrect),
+            );
+
             if (isCorrect) correctAnswerId = answerId;
           }
         }
-        
+
         if (answers.length >= 3) {
           // Ensure we have exactly 4 answers
           while (answers.length < 4) {
-            answers.add(Answer(
-              id: _uuid.v4(),
-              text: 'None of the above',
-              isCorrect: false,
-            ));
+            answers.add(
+              Answer(
+                id: _uuid.v4(),
+                text: 'None of the above',
+                isCorrect: false,
+              ),
+            );
           }
-          
-          questions.add(Question(
-            id: _uuid.v4(),
-            text: questionText.endsWith('?') ? questionText : '$questionText?',
-            answers: answers.take(4).toList(),
-            correctAnswerId: correctAnswerId ?? answers.first.id,
-            timeLimit: _getDifficultyTimeLimit('medium'),
-          ));
+
+          questions.add(
+            Question(
+              id: _uuid.v4(),
+              text: questionText.endsWith('?')
+                  ? questionText
+                  : '$questionText?',
+              answers: answers.take(4).toList(),
+              correctAnswerId: correctAnswerId ?? answers.first.id,
+              timeLimit: _getDifficultyTimeLimit('medium'),
+            ),
+          );
         }
       }
     }
-    
+
     return questions;
   }
 
-  void _cacheQuestions(String topic, String difficulty, List<Question> questions) {
+  void _cacheQuestions(
+    String topic,
+    String difficulty,
+    List<Question> questions,
+  ) {
     final key = '${topic}_${difficulty}_${questions.length}';
     _questionCache[key] = questions;
   }
 
-  List<Question> _createIntelligentFallbacks(String topic, String difficulty, int count) {
+  List<Question> _createIntelligentFallbacks(
+    String topic,
+    String difficulty,
+    int count,
+  ) {
     // This would be a comprehensive fallback system
     // For now, creating basic template questions
     final questions = <Question>[];
     final templates = _getTopicTemplates(topic);
-    
+
     for (int i = 0; i < count && i < templates.length; i++) {
       final template = templates[i];
       final correctAnswerId = _uuid.v4();
-      
-      questions.add(Question(
-        id: _uuid.v4(),
-        text: template['question']!.replaceAll('[TOPIC]', topic),
-        answers: [
-          Answer(id: correctAnswerId, text: template['correct']!, isCorrect: true),
-          Answer(id: _uuid.v4(), text: template['wrong1']!, isCorrect: false),
-          Answer(id: _uuid.v4(), text: template['wrong2']!, isCorrect: false),
-          Answer(id: _uuid.v4(), text: template['wrong3']!, isCorrect: false),
-        ],
-        correctAnswerId: correctAnswerId,
-        timeLimit: _getDifficultyTimeLimit(difficulty),
-      ));
+
+      questions.add(
+        Question(
+          id: _uuid.v4(),
+          text: template['question']!.replaceAll('[TOPIC]', topic),
+          answers: [
+            Answer(
+              id: correctAnswerId,
+              text: template['correct']!,
+              isCorrect: true,
+            ),
+            Answer(id: _uuid.v4(), text: template['wrong1']!, isCorrect: false),
+            Answer(id: _uuid.v4(), text: template['wrong2']!, isCorrect: false),
+            Answer(id: _uuid.v4(), text: template['wrong3']!, isCorrect: false),
+          ],
+          correctAnswerId: correctAnswerId,
+          timeLimit: _getDifficultyTimeLimit(difficulty),
+        ),
+      );
     }
-    
+
     return questions;
   }
 
@@ -894,10 +958,14 @@ Topic: $topic''';
 
   int _getDifficultyTimeLimit(String difficulty) {
     switch (difficulty.toLowerCase()) {
-      case 'easy': return 45;
-      case 'medium': return 30;
-      case 'hard': return 20;
-      default: return 30;
+      case 'easy':
+        return 45;
+      case 'medium':
+        return 30;
+      case 'hard':
+        return 20;
+      default:
+        return 30;
     }
   }
 }
