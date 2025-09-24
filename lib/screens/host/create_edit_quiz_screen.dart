@@ -7,10 +7,10 @@ import '../../providers/providers.dart';
 import '../../models/quiz.dart';
 import '../../models/question.dart';
 import '../../models/answer.dart';
-import '../../services/ai_service.dart';
 import '../../services/image_upload_service.dart';
 import '../../widgets/responsive_image.dart';
-import 'ai_generation_dialog.dart';
+import '../../widgets/ai_generation_progress_dialog.dart';
+import 'improved_ai_generation_dialog.dart';
 
 // LTRTextInputFormatter remains for potential future use or other fields
 class LTRTextInputFormatter extends TextInputFormatter {
@@ -348,14 +348,43 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        return AIGenerationDialogContent(
+        return ImprovedAIGenerationDialog(
           onGenerate: (topic, difficulty, count, {String? modelId}) async {
-            Navigator.pop(dialogContext); // Close dialog
-            await _generateQuestionsWithAI(
-              topic,
-              difficulty,
-              count,
-              modelId: modelId,
+            // Use the new progress dialog with robust AI service
+            showAIGenerationProgress(
+              context: context,
+              topic: topic,
+              difficulty: difficulty,
+              count: count,
+              preferredModel: modelId,
+              onSuccess: (questions) {
+                setState(() {
+                  _questions.addAll(questions);
+                });
+                
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🎉 Successfully added ${questions.length} questions about "$topic"!'),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+              onError: (error) {
+                // Show error with helpful message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('⚠️ Generation failed: $error'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 4),
+                    action: SnackBarAction(
+                      label: 'Try Again',
+                      onPressed: _showAIGenerationDialog,
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -363,45 +392,27 @@ class _CreateEditQuizScreenState extends ConsumerState<CreateEditQuizScreen> {
     );
   }
 
-  Future<void> _generateQuestionsWithAI(
-    String topic,
-    String difficulty,
-    int count, {
-    String? modelId,
-  }) async {
-    try {
-      // Show loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generating questions with AI...')),
-      );
-
-      final aiService = AIService();
-      final generatedQuestions = await aiService.generateQuestions(
+  void showAIGenerationProgress({
+    required BuildContext context,
+    required String topic,
+    required String difficulty,
+    required int count,
+    String? preferredModel,
+    required Function(List<Question>) onSuccess,
+    required Function(String) onError,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AIGenerationProgressDialog(
         topic: topic,
         difficulty: difficulty,
         count: count,
-        modelId: modelId,
-      );
-
-      setState(() {
-        _questions.addAll(generatedQuestions);
-      });
-
-      final isSampleQuestions = generatedQuestions.any(
-        (q) => q.text.contains('Sample Question'),
-      );
-      final message = isSampleQuestions
-          ? 'Created ${generatedQuestions.length} sample questions. Please edit them manually since AI generation failed.'
-          : 'Successfully generated ${generatedQuestions.length} questions!';
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to generate questions: $e')),
-      );
-    }
+        preferredModel: preferredModel,
+        onSuccess: onSuccess,
+        onError: onError,
+      ),
+    );
   }
 
   // Ensure _saveQuiz method is correctly defined within this class
