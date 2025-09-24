@@ -377,6 +377,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final currentGame = ref.read(currentGameProvider);
     final currentPlayer = ref.read(currentPlayerProvider);
     if (currentGame != null && currentPlayer != null) {
+      debugPrint('=== SUBMITTING ANSWER ===');
+      debugPrint('Player: ${currentPlayer.name} (${currentPlayer.id})');
+      debugPrint('Question: ${currentGame.currentQuestionIndex}');
+      debugPrint('Selected answer: $_selectedAnswerId');
+      
       final updatedAnswers = Map<String, Map<int, String>>.from(
         currentGame.playerAnswers,
       );
@@ -444,13 +449,26 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final currentQuestion = questions[game.currentQuestionIndex];
     final correctAnswerId = currentQuestion.correctAnswerId;
 
+    debugPrint('=== SCORING QUESTION ${game.currentQuestionIndex} ===');
+    debugPrint('Correct answer ID: $correctAnswerId');
+
     return game.players.map((player) {
       final playerAnswers = game.playerAnswers[player.id];
+      final playerAnswer = playerAnswers?[game.currentQuestionIndex];
+      
+      debugPrint('Player ${player.name} (${player.id}):');
+      debugPrint('  Current score: ${player.totalScore}');
+      debugPrint('  Answer: $playerAnswer');
+      debugPrint('  Correct: ${playerAnswer == correctAnswerId}');
+      
       if (playerAnswers != null &&
           playerAnswers[game.currentQuestionIndex] == correctAnswerId) {
         // Correct answer, add 10 points
-        return player.copyWith(totalScore: player.totalScore + 10);
+        final newScore = player.totalScore + 10;
+        debugPrint('  New score: $newScore');
+        return player.copyWith(totalScore: newScore);
       }
+      debugPrint('  Score unchanged: ${player.totalScore}');
       return player;
     }).toList();
   }

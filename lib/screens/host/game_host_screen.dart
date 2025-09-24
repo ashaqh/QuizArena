@@ -238,16 +238,29 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
     final questions = game.quiz?.questions ?? [];
     if (game.currentQuestionIndex >= questions.length) return game.players;
 
-    final currentQuestion = questions[game.currentQuestionIndex];
+    final currentQuestion = questions[game.currentQuestionIndex];      
     final correctAnswerId = currentQuestion.correctAnswerId;
+
+    debugPrint('=== HOST SCORING QUESTION ${game.currentQuestionIndex} ===');
+    debugPrint('Correct answer ID: $correctAnswerId');
 
     return game.players.map((player) {
       final playerAnswers = game.playerAnswers[player.id];
+      final playerAnswer = playerAnswers?[game.currentQuestionIndex];
+      
+      debugPrint('Player ${player.name} (${player.id}):');
+      debugPrint('  Current score: ${player.totalScore}');
+      debugPrint('  Answer: $playerAnswer');
+      debugPrint('  Correct: ${playerAnswer == correctAnswerId}');
+      
       if (playerAnswers != null &&
           playerAnswers[game.currentQuestionIndex] == correctAnswerId) {
         // Correct answer, add 10 points
-        return player.copyWith(totalScore: player.totalScore + 10);
+        final newScore = player.totalScore + 10;
+        debugPrint('  New score: $newScore');
+        return player.copyWith(totalScore: newScore);
       }
+      debugPrint('  Score unchanged: ${player.totalScore}');
       return player;
     }).toList();
   }
@@ -255,16 +268,27 @@ class _GameHostScreenState extends ConsumerState<GameHostScreen> {
   void _endGame() async {
     try {
       final currentGame = ref.read(currentGameProvider);
+      final currentPlayer = ref.read(currentPlayerProvider);
       final user = FirebaseAuth.instance.currentUser;
 
       // Save game data for host if game exists and user is authenticated
-      if (currentGame != null && user != null) {
+      if (currentGame != null && user != null && currentPlayer != null) {
+        // Get the updated host player data from the game object (which has the correct scores)
+        final updatedHostPlayer = currentGame.players.firstWhere(
+          (p) => p.id == currentPlayer.id,
+          orElse: () => currentPlayer,
+        );
+
+        // Update the currentPlayerProvider with the final scores
+        ref.read(currentPlayerProvider.notifier).state = updatedHostPlayer;
+
         await _userDataService.createGameHistoryFromGame(
           currentGame,
           user.uid,
           'host',
+          currentPlayer: updatedHostPlayer,
         );
-        debugPrint('Host game data saved successfully');
+        debugPrint('Host game data saved successfully with score: ${updatedHostPlayer.totalScore}');
       }
 
       await ref.read(currentGameProvider.notifier).endGame();
