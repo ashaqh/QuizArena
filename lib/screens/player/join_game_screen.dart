@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/providers.dart';
 import '../../models/player.dart';
 import 'game_lobby_screen.dart';
@@ -19,10 +20,37 @@ class _JoinGameScreenState extends ConsumerState<JoinGameScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _initializePlayerName();
+  }
+
+  @override
   void dispose() {
     _gameCodeController.dispose();
     _playerNameController.dispose();
     super.dispose();
+  }
+
+  /// Initialize player name from authentication data
+  void _initializePlayerName() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Try to get display name first, then email username, then fallback
+      String? userName;
+      
+      if (user.displayName != null && user.displayName!.isNotEmpty) {
+        userName = user.displayName;
+      } else if (user.email != null && user.email!.isNotEmpty) {
+        // Extract username from email (part before @)
+        userName = user.email!.split('@').first;
+      }
+      
+      if (userName != null && userName.isNotEmpty) {
+        // Set the initial text but keep it editable
+        _playerNameController.text = userName;
+      }
+    }
   }
 
   @override

@@ -191,56 +191,17 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color:
-                                      _selectedAnswerId ==
-                                          currentQuestion.correctAnswerId
-                                      ? Colors.green.shade100
-                                      : Colors.red.shade100,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color:
-                                        _selectedAnswerId ==
-                                            currentQuestion.correctAnswerId
-                                        ? Colors.green.shade300
-                                        : Colors.red.shade300,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _selectedAnswerId ==
-                                              currentQuestion.correctAnswerId
-                                          ? Icons.check_circle
-                                          : Icons.cancel,
-                                      color:
-                                          _selectedAnswerId ==
-                                              currentQuestion.correctAnswerId
-                                          ? Colors.green
-                                          : Colors.red,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _selectedAnswerId ==
-                                              currentQuestion.correctAnswerId
-                                          ? 'Correct'
-                                          : 'Incorrect',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            _selectedAnswerId ==
-                                                currentQuestion.correctAnswerId
-                                            ? Colors.green
-                                            : Colors.red,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              Icon(
+                                _selectedAnswerId ==
+                                        currentQuestion.correctAnswerId
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color:
+                                    _selectedAnswerId ==
+                                        currentQuestion.correctAnswerId
+                                    ? Colors.green
+                                    : Colors.red,
+                                size: 32,
                               ),
                             ],
                           ),
