@@ -227,6 +227,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Colors.orange,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
                     'Games Played',
@@ -248,6 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Colors.blue,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
                     'Win Streak',
