@@ -163,7 +163,7 @@ class RobustAIService {
   Future<void> _initializeProviders() async {
     // Prevent duplicate initialization
     if (_providers.isNotEmpty) return;
-    
+
     // Get available models dynamically from OpenRouter
     final availableModels = await _getAvailableModels();
 
@@ -185,13 +185,32 @@ class RobustAIService {
         supportsBatch: true,
       ),
 
+      // Secondary: Hugging Face Free Models
+      EnhancedAIProvider(
+        name: 'Hugging Face',
+        baseUrl: 'https://api-inference.huggingface.co/models',
+        models: [
+          'microsoft/DialoGPT-large',
+          'microsoft/DialoGPT-medium',
+          'gpt2',
+          'distilgpt2',
+          'facebook/blenderbot-400M-distill',
+          'microsoft/BlenderBot-3B',
+        ],
+        requiresAuth: true,
+        priority: 2, // Try HF before Smart Templates
+        timeout: const Duration(seconds: 60), // HF can be slower
+        maxRetries: 2,
+        supportsBatch: false,
+      ),
+
       // Fallback: Smart Template Generator (high-quality templates)
       EnhancedAIProvider(
         name: 'Smart Templates',
         baseUrl: 'local://smart-templates',
         models: ['knowledge-based-generator'],
         requiresAuth: false,
-        priority: 2, // Higher priority than old templates
+        priority: 3, // After Hugging Face
         timeout: const Duration(seconds: 2),
         maxRetries: 1,
         supportsBatch: true,
@@ -213,9 +232,11 @@ class RobustAIService {
     debugPrint(
       '🤖 RobustAI: Initialized with ${availableModels.length} OpenRouter models and ${_providers.length} total providers',
     );
-    
+
     for (final provider in _providers) {
-      debugPrint('🤖 RobustAI: Provider ${provider.name} with priority ${provider.priority}');
+      debugPrint(
+        '🤖 RobustAI: Provider ${provider.name} with priority ${provider.priority}',
+      );
     }
   }
 
@@ -571,12 +592,16 @@ class RobustAIService {
     String difficulty,
     int count,
   ) async {
-    debugPrint('🤖 RobustAI: Trying provider ${provider.name} with model $model');
-    
+    debugPrint(
+      '🤖 RobustAI: Trying provider ${provider.name} with model $model',
+    );
+
     switch (provider.name) {
       case 'OpenRouter':
       case 'OpenRouter Premium':
         return await _tryOpenRouter(provider, model, topic, difficulty, count);
+      case 'Hugging Face':
+        return await _tryHuggingFace(provider, model, topic, difficulty, count);
       case 'Smart Templates':
         return _createSmartTemplates(topic, difficulty, count);
       case 'Template Generator':
@@ -598,7 +623,7 @@ class RobustAIService {
       debugPrint('🤖 RobustAI: OpenRouter API key not configured');
       throw Exception('OpenRouter API key not configured');
     }
-    
+
     debugPrint('🤖 RobustAI: Making OpenRouter API call with model $model');
 
     final prompt = _buildEnhancedPrompt(topic, difficulty, count);
@@ -628,18 +653,24 @@ class RobustAIService {
         )
         .timeout(provider.timeout);
 
-    debugPrint('🤖 RobustAI: OpenRouter response status: ${response.statusCode}');
-    
+    debugPrint(
+      '🤖 RobustAI: OpenRouter response status: ${response.statusCode}',
+    );
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final content = data['choices']?[0]?['message']?['content'] as String?;
 
       if (content != null) {
-        debugPrint('🤖 RobustAI: OpenRouter returned content, parsing questions...');
+        debugPrint(
+          '🤖 RobustAI: OpenRouter returned content, parsing questions...',
+        );
         return _parseQuestionsFromResponse(content);
       }
     } else {
-      debugPrint('🤖 RobustAI: OpenRouter API failed with status ${response.statusCode}: ${response.body}');
+      debugPrint(
+        '🤖 RobustAI: OpenRouter API failed with status ${response.statusCode}: ${response.body}',
+      );
     }
 
     throw Exception(
@@ -647,7 +678,80 @@ class RobustAIService {
     );
   }
 
+  Future<List<Question>> _tryHuggingFace(
+    EnhancedAIProvider provider,
+    String model,
+    String topic,
+    String difficulty,
+    int count,
+  ) async {
+    final apiKey = dotenv.env['HUGGINGFACE_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      debugPrint('🤖 RobustAI: Hugging Face API key not configured');
+      throw Exception('Hugging Face API key not configured');
+    }
 
+    debugPrint('🤖 RobustAI: Making Hugging Face API call with model $model');
+
+    final prompt = _buildEnhancedPrompt(topic, difficulty, count);
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${provider.baseUrl}/$model'),
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'Content-Type': 'application/json',
+              'User-Agent': 'QuizArena/1.0',
+            },
+            body: jsonEncode({
+              'inputs': prompt,
+              'parameters': {
+                'max_new_tokens': 2000,
+                'temperature': 0.7,
+                'do_sample': true,
+                'top_p': 0.9,
+                'return_full_text': false,
+              },
+              'options': {'wait_for_model': true, 'use_cache': false},
+            }),
+          )
+          .timeout(provider.timeout);
+
+      debugPrint(
+        '🤖 RobustAI: Hugging Face response status: ${response.statusCode}',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        if (responseData.isNotEmpty &&
+            responseData[0]['generated_text'] != null) {
+          final generatedText = responseData[0]['generated_text'] as String;
+          debugPrint(
+            '🤖 RobustAI: Hugging Face returned content, parsing questions...',
+          );
+          return _parseQuestionsFromResponse(generatedText);
+        }
+      } else if (response.statusCode == 503) {
+        // Model is loading, wait and retry
+        debugPrint('🤖 RobustAI: Hugging Face model loading, waiting...');
+        await Future.delayed(const Duration(seconds: 10));
+        throw Exception('Hugging Face model loading, please retry');
+      } else {
+        debugPrint(
+          '🤖 RobustAI: Hugging Face API failed with status ${response.statusCode}: ${response.body}',
+        );
+        throw Exception(
+          'Hugging Face API error: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('🤖 RobustAI: Hugging Face request failed: $e');
+      rethrow;
+    }
+
+    throw Exception('Hugging Face API: Unexpected response format');
+  }
 
   String _buildEnhancedPrompt(String topic, String difficulty, int count) {
     return '''Create $count multiple-choice quiz questions about "$topic" with $difficulty difficulty level.
@@ -684,8 +788,6 @@ Requirements:
 Topic: $topic
 Generate exactly $count questions now:''';
   }
-
-
 
   String _getDifficultyDescription(String difficulty) {
     switch (difficulty.toLowerCase()) {
@@ -927,64 +1029,85 @@ Generate exactly $count questions now:''';
     String difficulty,
     int count,
   ) {
-    debugPrint('🤖 RobustAI: Creating smart template questions for topic: $topic');
-    
+    debugPrint(
+      '🤖 RobustAI: Creating smart template questions for topic: $topic',
+    );
+
     final questions = <Question>[];
     final topicLower = topic.toLowerCase();
-    
+
     // Enhanced question bank based on topic keywords
-    if (topicLower.contains('science') || topicLower.contains('physics') || topicLower.contains('chemistry') || topicLower.contains('biology')) {
+    if (topicLower.contains('science') ||
+        topicLower.contains('physics') ||
+        topicLower.contains('chemistry') ||
+        topicLower.contains('biology')) {
       questions.addAll(_createScienceQuestions(difficulty, count));
-    } else if (topicLower.contains('history') || topicLower.contains('historical')) {
+    } else if (topicLower.contains('history') ||
+        topicLower.contains('historical')) {
       questions.addAll(_createHistoryQuestions(difficulty, count));
-    } else if (topicLower.contains('geography') || topicLower.contains('world') || topicLower.contains('countries')) {
+    } else if (topicLower.contains('geography') ||
+        topicLower.contains('world') ||
+        topicLower.contains('countries')) {
       questions.addAll(_createGeographyQuestions(difficulty, count));
-    } else if (topicLower.contains('math') || topicLower.contains('mathematics') || topicLower.contains('calculation')) {
+    } else if (topicLower.contains('math') ||
+        topicLower.contains('mathematics') ||
+        topicLower.contains('calculation')) {
       questions.addAll(_createMathQuestions(difficulty, count));
-    } else if (topicLower.contains('technology') || topicLower.contains('computer') || topicLower.contains('programming')) {
+    } else if (topicLower.contains('technology') ||
+        topicLower.contains('computer') ||
+        topicLower.contains('programming')) {
       questions.addAll(_createTechnologyQuestions(difficulty, count));
-    } else if (topicLower.contains('sports') || topicLower.contains('games') || topicLower.contains('athletics')) {
+    } else if (topicLower.contains('sports') ||
+        topicLower.contains('games') ||
+        topicLower.contains('athletics')) {
       questions.addAll(_createSportsQuestions(difficulty, count));
-    } else if (topicLower.contains('literature') || topicLower.contains('books') || topicLower.contains('writing')) {
+    } else if (topicLower.contains('literature') ||
+        topicLower.contains('books') ||
+        topicLower.contains('writing')) {
       questions.addAll(_createLiteratureQuestions(difficulty, count));
-    } else if (topicLower.contains('art') || topicLower.contains('painting') || topicLower.contains('artist')) {
+    } else if (topicLower.contains('art') ||
+        topicLower.contains('painting') ||
+        topicLower.contains('artist')) {
       questions.addAll(_createArtQuestions(difficulty, count));
     } else {
       // Create general questions for any topic
-      questions.addAll(_createEnhancedGeneralQuestions(topic, difficulty, count));
+      questions.addAll(
+        _createEnhancedGeneralQuestions(topic, difficulty, count),
+      );
     }
-    
+
     // Ensure we have enough questions
     while (questions.length < count) {
       questions.addAll(_createEnhancedGeneralQuestions(topic, difficulty, 1));
     }
-    
+
     // Shuffle and limit to requested count
     questions.shuffle(Random());
     return questions.take(count).toList();
   }
 
   /// Helper method to create a question with proper structure
-  Question _createQuestion(String questionText, List<String> options, String correctAnswer, String difficulty) {
+  Question _createQuestion(
+    String questionText,
+    List<String> options,
+    String correctAnswer,
+    String difficulty,
+  ) {
     final answers = <Answer>[];
     String correctAnswerId = '';
-    
+
     // Create shuffled answers
     final shuffledOptions = List<String>.from(options);
     shuffledOptions.shuffle(Random());
-    
+
     for (final option in shuffledOptions) {
       final answerId = _uuid.v4();
       final isCorrect = option == correctAnswer;
       if (isCorrect) correctAnswerId = answerId;
-      
-      answers.add(Answer(
-        id: answerId,
-        text: option,
-        isCorrect: isCorrect,
-      ));
+
+      answers.add(Answer(id: answerId, text: option, isCorrect: isCorrect));
     }
-    
+
     return Question(
       id: _uuid.v4(),
       text: questionText,
@@ -999,7 +1122,12 @@ Generate exactly $count questions now:''';
     final scienceQuestions = [
       _createQuestion(
         'What is the speed of light in a vacuum?',
-        ['299,792,458 m/s', '300,000,000 m/s', '186,000 mph', '150,000,000 m/s'],
+        [
+          '299,792,458 m/s',
+          '300,000,000 m/s',
+          '186,000 mph',
+          '150,000,000 m/s',
+        ],
         '299,792,458 m/s',
         difficulty,
       ),
@@ -1028,17 +1156,42 @@ Generate exactly $count questions now:''';
         difficulty,
       ),
     ];
-    
+
     scienceQuestions.shuffle(Random());
     return scienceQuestions.take(count).toList();
   }
 
-  /// Create history-specific questions  
+  /// Create history-specific questions
   List<Question> _createHistoryQuestions(String difficulty, int count) {
     final historyQuestions = [
-      _createQuestion('In which year did World War II end?', ['1944', '1945', '1946', '1947'], '1945', difficulty),
-      _createQuestion('Who was the first President of the United States?', ['Thomas Jefferson', 'John Adams', 'George Washington', 'Benjamin Franklin'], 'George Washington', difficulty),
-      _createQuestion('Which ancient wonder was located in Alexandria?', ['Hanging Gardens', 'Lighthouse of Alexandria', 'Colossus of Rhodes', 'Temple of Artemis'], 'Lighthouse of Alexandria', difficulty),
+      _createQuestion(
+        'In which year did World War II end?',
+        ['1944', '1945', '1946', '1947'],
+        '1945',
+        difficulty,
+      ),
+      _createQuestion(
+        'Who was the first President of the United States?',
+        [
+          'Thomas Jefferson',
+          'John Adams',
+          'George Washington',
+          'Benjamin Franklin',
+        ],
+        'George Washington',
+        difficulty,
+      ),
+      _createQuestion(
+        'Which ancient wonder was located in Alexandria?',
+        [
+          'Hanging Gardens',
+          'Lighthouse of Alexandria',
+          'Colossus of Rhodes',
+          'Temple of Artemis',
+        ],
+        'Lighthouse of Alexandria',
+        difficulty,
+      ),
     ];
     historyQuestions.shuffle(Random());
     return historyQuestions.take(count).toList();
@@ -1047,9 +1200,24 @@ Generate exactly $count questions now:''';
   /// Create geography-specific questions
   List<Question> _createGeographyQuestions(String difficulty, int count) {
     final geographyQuestions = [
-      _createQuestion('What is the capital of Australia?', ['Sydney', 'Melbourne', 'Canberra', 'Perth'], 'Canberra', difficulty),
-      _createQuestion('Which is the longest river in the world?', ['Amazon River', 'Nile River', 'Yangtze River', 'Mississippi River'], 'Nile River', difficulty),
-      _createQuestion('Mount Everest is located in which mountain range?', ['Alps', 'Andes', 'Himalayas', 'Rocky Mountains'], 'Himalayas', difficulty),
+      _createQuestion(
+        'What is the capital of Australia?',
+        ['Sydney', 'Melbourne', 'Canberra', 'Perth'],
+        'Canberra',
+        difficulty,
+      ),
+      _createQuestion(
+        'Which is the longest river in the world?',
+        ['Amazon River', 'Nile River', 'Yangtze River', 'Mississippi River'],
+        'Nile River',
+        difficulty,
+      ),
+      _createQuestion(
+        'Mount Everest is located in which mountain range?',
+        ['Alps', 'Andes', 'Himalayas', 'Rocky Mountains'],
+        'Himalayas',
+        difficulty,
+      ),
     ];
     geographyQuestions.shuffle(Random());
     return geographyQuestions.take(count).toList();
@@ -1058,9 +1226,24 @@ Generate exactly $count questions now:''';
   /// Create math-specific questions
   List<Question> _createMathQuestions(String difficulty, int count) {
     final mathQuestions = [
-      _createQuestion('What is the value of π (pi) to two decimal places?', ['3.14', '3.15', '3.13', '3.16'], '3.14', difficulty),
-      _createQuestion('What is 15% of 200?', ['25', '30', '35', '40'], '30', difficulty),
-      _createQuestion('What is the square root of 144?', ['11', '12', '13', '14'], '12', difficulty),
+      _createQuestion(
+        'What is the value of π (pi) to two decimal places?',
+        ['3.14', '3.15', '3.13', '3.16'],
+        '3.14',
+        difficulty,
+      ),
+      _createQuestion(
+        'What is 15% of 200?',
+        ['25', '30', '35', '40'],
+        '30',
+        difficulty,
+      ),
+      _createQuestion(
+        'What is the square root of 144?',
+        ['11', '12', '13', '14'],
+        '12',
+        difficulty,
+      ),
     ];
     mathQuestions.shuffle(Random());
     return mathQuestions.take(count).toList();
@@ -1069,8 +1252,23 @@ Generate exactly $count questions now:''';
   /// Create literature-specific questions
   List<Question> _createLiteratureQuestions(String difficulty, int count) {
     final literatureQuestions = [
-      _createQuestion('Who wrote "Romeo and Juliet"?', ['Charles Dickens', 'William Shakespeare', 'Jane Austen', 'Mark Twain'], 'William Shakespeare', difficulty),
-      _createQuestion('Which novel begins with "It was the best of times..."?', ['Great Expectations', 'A Tale of Two Cities', 'Oliver Twist', 'David Copperfield'], 'A Tale of Two Cities', difficulty),
+      _createQuestion(
+        'Who wrote "Romeo and Juliet"?',
+        ['Charles Dickens', 'William Shakespeare', 'Jane Austen', 'Mark Twain'],
+        'William Shakespeare',
+        difficulty,
+      ),
+      _createQuestion(
+        'Which novel begins with "It was the best of times..."?',
+        [
+          'Great Expectations',
+          'A Tale of Two Cities',
+          'Oliver Twist',
+          'David Copperfield',
+        ],
+        'A Tale of Two Cities',
+        difficulty,
+      ),
     ];
     literatureQuestions.shuffle(Random());
     return literatureQuestions.take(count).toList();
@@ -1079,8 +1277,23 @@ Generate exactly $count questions now:''';
   /// Create technology-specific questions
   List<Question> _createTechnologyQuestions(String difficulty, int count) {
     final techQuestions = [
-      _createQuestion('What does "HTML" stand for?', ['Hypertext Markup Language', 'High-Tech Modern Language', 'Home Tool Markup Language', 'Hypertext Machine Language'], 'Hypertext Markup Language', difficulty),
-      _createQuestion('Who founded Microsoft?', ['Steve Jobs', 'Bill Gates', 'Mark Zuckerberg', 'Larry Page'], 'Bill Gates', difficulty),
+      _createQuestion(
+        'What does "HTML" stand for?',
+        [
+          'Hypertext Markup Language',
+          'High-Tech Modern Language',
+          'Home Tool Markup Language',
+          'Hypertext Machine Language',
+        ],
+        'Hypertext Markup Language',
+        difficulty,
+      ),
+      _createQuestion(
+        'Who founded Microsoft?',
+        ['Steve Jobs', 'Bill Gates', 'Mark Zuckerberg', 'Larry Page'],
+        'Bill Gates',
+        difficulty,
+      ),
     ];
     techQuestions.shuffle(Random());
     return techQuestions.take(count).toList();
@@ -1089,8 +1302,18 @@ Generate exactly $count questions now:''';
   /// Create sports-specific questions
   List<Question> _createSportsQuestions(String difficulty, int count) {
     final sportsQuestions = [
-      _createQuestion('How many players are on a basketball team on the court at one time?', ['4', '5', '6', '7'], '5', difficulty),
-      _createQuestion('In which sport would you perform a slam dunk?', ['Tennis', 'Basketball', 'Volleyball', 'Soccer'], 'Basketball', difficulty),
+      _createQuestion(
+        'How many players are on a basketball team on the court at one time?',
+        ['4', '5', '6', '7'],
+        '5',
+        difficulty,
+      ),
+      _createQuestion(
+        'In which sport would you perform a slam dunk?',
+        ['Tennis', 'Basketball', 'Volleyball', 'Soccer'],
+        'Basketball',
+        difficulty,
+      ),
     ];
     sportsQuestions.shuffle(Random());
     return sportsQuestions.take(count).toList();
@@ -1099,19 +1322,68 @@ Generate exactly $count questions now:''';
   /// Create art-specific questions
   List<Question> _createArtQuestions(String difficulty, int count) {
     final artQuestions = [
-      _createQuestion('Who painted the Mona Lisa?', ['Vincent van Gogh', 'Pablo Picasso', 'Leonardo da Vinci', 'Claude Monet'], 'Leonardo da Vinci', difficulty),
-      _createQuestion('Which art movement was Pablo Picasso associated with?', ['Impressionism', 'Cubism', 'Surrealism', 'Pop Art'], 'Cubism', difficulty),
+      _createQuestion(
+        'Who painted the Mona Lisa?',
+        [
+          'Vincent van Gogh',
+          'Pablo Picasso',
+          'Leonardo da Vinci',
+          'Claude Monet',
+        ],
+        'Leonardo da Vinci',
+        difficulty,
+      ),
+      _createQuestion(
+        'Which art movement was Pablo Picasso associated with?',
+        ['Impressionism', 'Cubism', 'Surrealism', 'Pop Art'],
+        'Cubism',
+        difficulty,
+      ),
     ];
     artQuestions.shuffle(Random());
     return artQuestions.take(count).toList();
   }
 
   /// Create enhanced general questions for any topic
-  List<Question> _createEnhancedGeneralQuestions(String topic, String difficulty, int count) {
+  List<Question> _createEnhancedGeneralQuestions(
+    String topic,
+    String difficulty,
+    int count,
+  ) {
     final generalQuestions = [
-      _createQuestion('What is a key concept related to $topic?', ['Primary principle', 'Secondary aspect', 'Unrelated concept', 'Opposite idea'], 'Primary principle', difficulty),
-      _createQuestion('Which is most important when studying $topic?', ['Understanding fundamentals', 'Memorizing details', 'Ignoring basics', 'Avoiding practice'], 'Understanding fundamentals', difficulty),
-      _createQuestion('What approach works best for learning $topic?', ['Practice and study', 'Guessing answers', 'Avoiding questions', 'Memorizing randomly'], 'Practice and study', difficulty),
+      _createQuestion(
+        'What is a key concept related to $topic?',
+        [
+          'Primary principle',
+          'Secondary aspect',
+          'Unrelated concept',
+          'Opposite idea',
+        ],
+        'Primary principle',
+        difficulty,
+      ),
+      _createQuestion(
+        'Which is most important when studying $topic?',
+        [
+          'Understanding fundamentals',
+          'Memorizing details',
+          'Ignoring basics',
+          'Avoiding practice',
+        ],
+        'Understanding fundamentals',
+        difficulty,
+      ),
+      _createQuestion(
+        'What approach works best for learning $topic?',
+        [
+          'Practice and study',
+          'Guessing answers',
+          'Avoiding questions',
+          'Memorizing randomly',
+        ],
+        'Practice and study',
+        difficulty,
+      ),
     ];
     generalQuestions.shuffle(Random());
     return generalQuestions.take(count).toList();

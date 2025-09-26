@@ -7,7 +7,7 @@ void main() async {
   // Load API key from .env file
   final envFile = File('.env');
   String? apiKey;
-  
+
   if (await envFile.exists()) {
     final envContent = await envFile.readAsString();
     final lines = envContent.split('\n');
@@ -18,7 +18,7 @@ void main() async {
       }
     }
   }
-  
+
   if (apiKey == null || apiKey.isEmpty) {
     print('❌ OPENROUTER_API_KEY not found in .env file');
     return;
@@ -97,10 +97,7 @@ void main() async {
             body: jsonEncode({
               'model': 'meta-llama/llama-3.2-3b-instruct:free',
               'messages': [
-                {
-                  'role': 'user',
-                  'content': 'Hello, just say "TEST SUCCESS"',
-                },
+                {'role': 'user', 'content': 'Hello, just say "TEST SUCCESS"'},
               ],
               'temperature': 0.7,
               'max_tokens': 50,
@@ -119,7 +116,7 @@ void main() async {
       } else {
         print('❌ Question generation failed: ${testResponse.statusCode}');
         print('Error: ${testResponse.body}');
-        
+
         // Try a different free model
         print('\n🔄 Trying different free model...');
         final testResponse2 = await http
@@ -134,10 +131,7 @@ void main() async {
               body: jsonEncode({
                 'model': 'deepseek/deepseek-chat-v3.1:free',
                 'messages': [
-                  {
-                    'role': 'user',
-                    'content': 'Hello, just say "TEST SUCCESS"',
-                  },
+                  {'role': 'user', 'content': 'Hello, just say "TEST SUCCESS"'},
                 ],
                 'max_tokens': 50,
               }),
